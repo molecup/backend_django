@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import LocalLeague, Player, Stadium, Team
+from .models import LocalLeague, Match, MatchEvent, Player, Stadium, Team, TeamParticipationMatch
 
 class ExtraFieldsSerializer(serializers.Serializer):
 
@@ -53,4 +53,41 @@ class StadiumSerializer(serializers.ModelSerializer):
     class Meta:
         model = Stadium
         fields = '__all__'
-        
+
+class MatchEventSerializer(serializers.ModelSerializer):
+    team_match = serializers.PrimaryKeyRelatedField(
+        read_only=False,
+        queryset=TeamParticipationMatch.objects.all()
+    )
+    player = serializers.PrimaryKeyRelatedField(
+        read_only=False,
+        queryset=Player.objects.all()
+    )
+    class Meta:
+        model = MatchEvent
+        fields = '__all__'
+
+class TeamParticipationMatchSerializer(serializers.ModelSerializer):
+    # team = serializers.SlugRelatedField(
+    #     read_only=False,
+    #     queryset=Team.objects.all(),
+    #     slug_field='slug'
+    # )
+    team = TeamSerializer(read_only=True)
+    events = MatchEventSerializer(many=True, read_only=True)
+    class Meta:
+        model = TeamParticipationMatch
+        fields = ['id', 'is_home', 'penalties', 'score', 'team', 'events']
+
+class MatchSerializer(serializers.ModelSerializer):
+    # team_scores = serializers.SerializerMethodField()
+    # def get_team_scores(self, obj):
+    #     qset = TeamParticipationMatch.objects.filter(match=obj)
+    #     return [TeamParticipationMatchSerializer(tp).data for tp in qset]
+
+    teams = TeamParticipationMatchSerializer(many=True, source='participations', read_only=True)
+
+    class Meta:
+        model = Match
+        fields = ['id', 'datetime', 'stadium', 'score_text', 'name', 'finished', 'teams']
+        depth=1

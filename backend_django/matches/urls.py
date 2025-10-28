@@ -9,5 +9,7 @@ router.register(r'local-leagues', LocalLeagueViewSet)
 router.register(r'teams', TeamViewSet)
 router.register(r'players', PlayerViewSet)
 router.register(r'stadiums', StadiumViewSet)
+router.register(r'matches', MatchViewSet)
+router.register(r'match-events', MatchEventViewSet)
 
 urlpatterns = router.urls

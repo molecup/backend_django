@@ -1,5 +1,7 @@
 from django.contrib import admin
-from .models import LocalLeague, Match, MatchEvent, Stadium, Team, Player
+from .models import LocalLeague, Match, MatchEvent, Stadium, Team, Player, TeamParticipationMatch
+from nested_admin import NestedStackedInline, NestedModelAdmin, NestedTabularInline
+
 
 # inlines for many-to-many relationships
 class StadiumLocalLeagueInline(admin.TabularInline):
@@ -33,14 +35,41 @@ class PlayerTeamInline(admin.TabularInline):
     show_change_link = True
     classes = ['collapse']
 
-class MatchEventInline(admin.TabularInline):
+class MatchEventInline(NestedTabularInline):
     model = MatchEvent
+    fk_name = 'team_match'
+    extra = 0
+    verbose_name = "Event for this Team"
+    verbose_name_plural = "Events for this Team"
+    show_change_link = False
+    fields = ('event_type', 'minute', 'player')
+
+
+class TeamParticipationMatchInline(NestedTabularInline):
+    model = TeamParticipationMatch
     fk_name = 'match'
-    extra = 1
-    verbose_name = "Events for this Match"
-    verbose_name_plural = verbose_name
+    verbose_name = "Teams in this Match"
+    verbose_name_plural = "Team in this Match"
+    can_delete = False
+    extra = 2
+    max_num = 2
+    min_num = 2
+    fields = ('team', 'is_home', 'score', 'score_offset', 'penalties')
+    readonly_fields = ('score',)
+    show_change_link = False
+
+    inlines = (MatchEventInline,)
 
 # Register your models here.
+
+# @admin.register(TeamParticipationMatch)
+# class TeamParticipationMatchAdmin(admin.ModelAdmin):
+#     list_display = ('id', 'match', 'team', 'is_home', 'score_offset', 'penalties', 'score')
+#     list_editable = ('is_home', 'score_offset', 'penalties')
+#     search_fields = ('match__id', 'team__name')
+#     list_filter = ('team__local_league__name',)
+#     readonly_fields = ('score',)
+#     inlines = (MatchEventInline,)
 
 @admin.register(LocalLeague)
 class LocalLeagueAdmin(admin.ModelAdmin):
@@ -86,22 +115,18 @@ class StadiumAdmin(admin.ModelAdmin):
     list_editable = ('name', 'address')
 
 @admin.register(Match)
-class MatchAdmin(admin.ModelAdmin):
-    list_display = ('id', 'home_team', 'home_score', 'away_team', 'away_score', 'date', 'finished')
-    list_filter = ('stadium__name', 'home_team__local_league__name', 'away_team__local_league__name')
-    search_fields = ('home_team__name', 'away_team__name', 'stadium__name', 'date')
-    list_editable = ('date', 'finished')
+class MatchAdmin(NestedModelAdmin):
+    list_display = ('name', 'score_text', 'datetime', 'stadium', 'finished')
+    list_editable = ('datetime', 'stadium', 'finished')
+    search_fields = ('teams__name', 'stadium__name')
+    list_filter = ('teams__local_league__name',)
     fieldsets = (
-        ('Match Info', {
-            'fields': ('date', 'finished', 'stadium')
-        }),
-        ('Results', {
-            'fields': (('home_team', 'home_team_score_offset', 'home_penalties'), ('away_team', 'away_team_score_offset', 'away_penalties')),
+        ('General Info', {
+            'fields': ('datetime', 'stadium', ('score_computation_mode', 'finished')),
         }),
         ('Registration', {
             'fields': ('registration_required', 'registration_link'),
-            'classes': ('collapse',),
-        }),
+            'classes': ['collapse'],
+        })
     )
-    inlines = (MatchEventInline,)
-
+    inlines = (TeamParticipationMatchInline,)

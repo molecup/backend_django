@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.contrib import admin
 # from location_field.models.plain import PlainLocationField
 
 # Create your models here.
@@ -77,24 +78,69 @@ class Stadium(models.Model):
 
     def __str__(self):
         return f"Stadium <{self.id}>: {self.name}"
-    
+
+class TeamParticipationMatch(models.Model):
+    team = models.ForeignKey(
+        Team,
+        on_delete=models.PROTECT,
+        verbose_name="Team participating in the match",
+        related_name='participations'
+    )
+    match = models.ForeignKey(
+        'Match',
+        on_delete=models.CASCADE,
+        verbose_name="Match in which the team is participating",
+        related_name='participations'
+    )
+    is_home = models.BooleanField("Is this the home team?", default=False)
+    score_offset = models.SmallIntegerField(
+        "Score offset for this team",
+        default=0,
+        help_text="Adjust the displayed score for this team by this offset (can be negative)"
+    )
+    penalties = models.PositiveSmallIntegerField(
+        "Penalties scored by this team",
+        default=0,
+    )
+
+    @property
+    @admin.display(
+        description="Computed Score",
+        boolean=False,
+    )
+    def score(self):
+        match = self.match
+        if match.score_computation_mode == 'OFFSET':
+            return self.score_offset
+        event_goals = self.events.filter(event_type='GOAL').count()
+        if match.score_computation_mode == 'EVENTS':
+            return event_goals
+        if match.score_computation_mode == 'SUM':
+            return event_goals + self.score_offset
+        return 0
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['team', 'match'], name='unique_team_match_participation'),
+            models.UniqueConstraint(fields=['match', 'is_home'], name='unique_home_team_per_match'),
+        ]
+        ordering = ['-is_home']
+
+    def __str__(self):
+        home_away = "Home" if self.is_home else "Away"
+        return f"TeamParticipationMatch <{self.id}>: {home_away} team <{self.team.slug}> in match <{self.match.name}>"
+
 class Match(models.Model):
     class Meta:
         verbose_name_plural = "Matches"
-        ordering = ['-date']
+        ordering = ['-datetime']
 
-    date = models.DateTimeField("Match date and time")
-    home_team = models.ForeignKey(
+    datetime = models.DateTimeField("Match date and time")
+    teams = models.ManyToManyField(
         Team,
-        on_delete=models.PROTECT,
-        related_name='home_matches',
-        verbose_name="Home team"
-    )
-    away_team = models.ForeignKey(
-        Team,
-        on_delete=models.PROTECT,
-        related_name='away_matches',
-        verbose_name="Away team"
+        related_name='matches',
+        verbose_name="Teams participating in the match",
+        through=TeamParticipationMatch,
     )
     stadium = models.ForeignKey(
         Stadium,
@@ -106,16 +152,7 @@ class Match(models.Model):
     )
     registration_required = models.BooleanField("Is registration available for this match?", default=False)
     registration_link = models.URLField("Registration link", max_length=200, blank=True, null=True)
-    home_team_score_offset = models.SmallIntegerField(
-        "Home team score offset", 
-        default=0,
-        help_text="Adjust the displayed score for the home team by this offset (can be negative)"
-    )
-    away_team_score_offset = models.SmallIntegerField(
-        "Away team score offset",
-        default=0,
-        help_text="Adjust the displayed score for the away team by this offset (can be negative)"
-    )
+    
     SCORE_COMPUTATION_MODES = [
         ('EVENTS', 'Automatic from events'),
         ('OFFSET', 'Manual offset only'),
@@ -129,50 +166,36 @@ class Match(models.Model):
         help_text="Method to compute the displayed score"
     )
 
-    home_penalties = models.PositiveSmallIntegerField(
-        "Home team penalties scored",
-        default=0,
-        help_text="Number of penalties scored by the home team"
-    )
-    away_penalties = models.PositiveSmallIntegerField(
-        "Away team penalties scored",
-        default=0,
-        help_text="Number of penalties scored by the away team"
-    )
     finished = models.BooleanField("Is the match finished?", default=False)
 
     @property
-    def home_score(self):
-        if self.score_computation_mode == 'OFFSET':
-            return self.home_team_score_offset
-        event_goals = self.events.filter(event_type='GOAL', team='HOME').count()
-        if self.score_computation_mode == 'EVENTS':
-            return event_goals
-        if self.score_computation_mode == 'SUM':
-            return event_goals + self.home_team_score_offset
-        return 0
+    def score_text(self):
+        participations = self.teams.through.objects.filter(match=self)
+        if participations.count() != 2:
+            return "N/A"
+        home_team = participations.get(is_home=True)
+        away_team = participations.get(is_home=False)
+        return f"{home_team.score} - {away_team.score}"
     
     @property
-    def away_score(self):
-        if self.score_computation_mode == 'OFFSET':
-            return self.away_team_score_offset
-        event_goals = self.events.filter(event_type='GOAL', team='AWAY').count()
-        if self.score_computation_mode == 'EVENTS':
-            return event_goals
-        if self.score_computation_mode == 'SUM':
-            return event_goals + self.away_team_score_offset
-        return 0
+    def name(self):
+        participations = self.teams.through.objects.filter(match=self)
+        if participations.count() != 2:
+            return "N/A"
+        home_team = participations.get(is_home=True)
+        away_team = participations.get(is_home=False)
+        return f"{home_team.team.name} vs {away_team.team.name}"
 
 
     def __str__(self):
-        return f"Match <{self.id}>: {self.home_team.name} vs {self.away_team.name} on {self.date.strftime('%Y-%m-%d %H:%M')}"
+        return f"Match <{self.id}>: {self.name} on {self.datetime.strftime('%Y-%m-%d %H:%M')}"
     
 class MatchEvent(models.Model):
-    match = models.ForeignKey(
-        Match,
+    team_match = models.ForeignKey(
+        TeamParticipationMatch,
         on_delete=models.CASCADE,
         related_name='events',
-        verbose_name="Match to which the event belongs"
+        verbose_name="Match and Team to which the event belongs"
     )
     minute = models.PositiveSmallIntegerField(
         "Minute of the event", 
@@ -204,16 +227,6 @@ class MatchEvent(models.Model):
         default='GOAL',
         help_text="Select the type of event"
     )
-    TEAM_CHOICES = [
-        ('HOME', 'Home Team'),
-        ('AWAY', 'Away Team'),
-    ]
-    team = models.CharField(
-        "Team of the player",
-        max_length=5,
-        choices=TEAM_CHOICES,
-        help_text="Select whether the player belongs to the home or away team"
-    )
 
     def __str__(self):
-        return f"MatchEvent <{self.id}>: {self.event_type} at minute {self.minute} in match <{self.match.id}>"
+        return f"MatchEvent <{self.id}>: {self.event_type} at minute {self.minute} in match {self.team_match.match.id} for team {self.team_match.team.slug}"
