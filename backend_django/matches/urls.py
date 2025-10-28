@@ -8,5 +8,6 @@ router = routers.DefaultRouter()
 router.register(r'local-leagues', LocalLeagueViewSet)
 router.register(r'teams', TeamViewSet)
 router.register(r'players', PlayerViewSet)
+router.register(r'stadiums', StadiumViewSet)
 
 urlpatterns = router.urls

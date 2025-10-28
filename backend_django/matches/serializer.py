@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import LocalLeague, Team, Player
+from .models import LocalLeague, Player, Stadium, Team
 
 class ExtraFieldsSerializer(serializers.Serializer):
 
@@ -15,7 +15,7 @@ class LocalLeagueSerializer(ExtraFieldsSerializer, serializers.ModelSerializer):
     class Meta:
         model = LocalLeague
         fields = '__all__'
-        extra_fields = ['teams']
+        extra_fields = ['teams', 'stadiums']
         depth = 1
 
 class TeamSerializer(ExtraFieldsSerializer,serializers.ModelSerializer):
@@ -41,3 +41,16 @@ class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
         fields = '__all__'
+
+
+class StadiumSerializer(serializers.ModelSerializer):
+    local_leagues = serializers.SlugRelatedField(
+        read_only=False,
+        many=True,
+        queryset=LocalLeague.objects.all(),
+        slug_field='slug'
+    )
+    class Meta:
+        model = Stadium
+        fields = '__all__'
+        

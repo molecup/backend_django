@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import LocalLeague, Team, Player
+from .models import LocalLeague, Stadium, Team, Player
 
 # Register your models here.
 @admin.register(LocalLeague)
@@ -8,6 +8,18 @@ class LocalLeagueAdmin(admin.ModelAdmin):
     search_fields = ('slug', 'name', 'title')
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ("name", "title", "subtitle")
+    fieldsets = (
+        (None, {
+            'fields': ('slug', 'name')
+        }),
+        ('Page Info', {
+            'fields': ('title', 'subtitle')
+        }),
+        # ('Related Info', {
+        #     'fields': ('teams', 'stadiums'),
+        #     'classes': ('collapse',),
+        # }),
+    )
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
@@ -25,3 +37,11 @@ class PlayerAdmin(admin.ModelAdmin):
     list_editable = ('first_name', 'last_name', 'shirt_number', 'position')
 
     search_help_text = "Search by first name, last name, or shirt number."
+
+@admin.register(Stadium)
+class StadiumAdmin(admin.ModelAdmin):
+    fields = ('name', 'address', ('latitude', 'longitude'), 'local_leagues')
+    list_display = ('id', 'name', 'address', 'latitude', 'longitude')
+    search_fields = ('name', 'address')
+    list_filter = ('local_leagues__name',)
+    list_editable = ('name', 'address')

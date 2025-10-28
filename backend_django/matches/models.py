@@ -1,5 +1,6 @@
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
+# from location_field.models.plain import PlainLocationField
 
 # Create your models here.
 class LocalLeague(models.Model):
@@ -62,3 +63,18 @@ class Player(models.Model):
 
     def __str__(self):
         return f"Player <{self.id}>: {self.first_name} {self.last_name} (#{self.shirt_number}) in team <{self.team.slug}>"
+    
+class Stadium(models.Model):
+    name = models.CharField("Stadium name", max_length=100)
+    address = models.CharField("Stadium address", max_length=100)
+    latitude = models.DecimalField("Stadium latitude", max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField("Stadium longitude", max_digits=9, decimal_places=6, null=True, blank=True)
+    local_leagues = models.ManyToManyField(
+        LocalLeague,
+        related_name='stadiums',
+        verbose_name="Local leagues that use this stadium"
+    )
+
+    def __str__(self):
+        return f"Stadium <{self.id}>: {self.name}"
+    
