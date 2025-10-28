@@ -1,26 +1,12 @@
 from django.urls import include, path
+from rest_framework import routers
+
 # from .views import *
 from .views import *
 
-ENDPOINTS_SLUG = [
-    ('local-league/', local_league_handlers),
-    ('team/', team_handlers),
-]
+router = routers.DefaultRouter()
+router.register(r'local-leagues', LocalLeagueViewSet)
+router.register(r'teams', TeamViewSet)
+router.register(r'players', PlayerViewSet)
 
-ENDPOINTS_PK = [
-    ('player/', player_handlers),
-]
-
-urlpatterns = [path(
-    endpoint,
-    include([
-        path('<slug:slug>/', handlers['entity_manager'], name=f'{endpoint}-manager'),
-        path('', handlers['collection_manager'], name=f'{endpoint}-collection'),
-    ])
-) for endpoint, handlers in ENDPOINTS_SLUG] + [path(
-    endpoint,
-    include([
-        path('<int:pk>/', handlers['entity_manager'], name=f'{endpoint}-manager'),
-        path('', handlers['collection_manager'], name=f'{endpoint}-collection'),
-    ])
-) for endpoint, handlers in ENDPOINTS_PK]
+urlpatterns = router.urls

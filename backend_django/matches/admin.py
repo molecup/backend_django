@@ -4,22 +4,24 @@ from .models import LocalLeague, Team, Player
 # Register your models here.
 @admin.register(LocalLeague)
 class LocalLeagueAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'name', 'title')
+    list_display = ('slug', 'name', 'title', 'subtitle')
     search_fields = ('slug', 'name', 'title')
     prepopulated_fields = {'slug': ('name',)}
+    list_editable = ("name", "title", "subtitle")
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'name', 'short_name', 'league')
-    search_fields = ('slug', 'name', 'short_name', 'league__name')
+    list_display = ('slug', 'name', 'short_name', 'local_league__name')
+    search_fields = ('slug', 'name', 'short_name', 'local_league__name')
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ("name", "short_name")
+    list_filter = ('local_league__name',)
 
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'last_name', 'first_name', 'shirt_number', 'position', 'team')
+    list_display = ('id', 'last_name', 'first_name', 'shirt_number', 'position', 'team__name')
     search_fields = ('first_name', 'last_name', 'shirt_number')
-    list_filter = ('position', 'team__league')
+    list_filter = ('position', 'team__local_league__name')
     list_editable = ('first_name', 'last_name', 'shirt_number', 'position')
 
     search_help_text = "Search by first name, last name, or shirt number."

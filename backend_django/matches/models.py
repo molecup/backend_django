@@ -9,8 +9,8 @@ class LocalLeague(models.Model):
         unique=True,
         null=False, 
     )
-    name = models.CharField("Name to be displayed", max_length=50)
-    title = models.CharField("Full league page title", max_length=100)
+    name = models.CharField("Local League Name", max_length=50)
+    title = models.CharField("League page full title", max_length=100)
     subtitle = models.CharField("League page subtitle", max_length=200, blank=True)
     
 
@@ -19,13 +19,14 @@ class LocalLeague(models.Model):
     
 class Team(models.Model):
     slug = models.SlugField(
+        "Unique slug",
         max_length=20, 
         unique=True,
         null=False,
     )
     name = models.CharField("Full name", max_length=50)
     short_name = models.CharField("Short name", max_length=20)
-    league = models.ForeignKey(
+    local_league = models.ForeignKey(
         LocalLeague, 
         on_delete=models.PROTECT, 
         related_name='teams',
@@ -33,7 +34,7 @@ class Team(models.Model):
     )
 
     def __str__(self):
-        return f"Team <{self.slug}>: {self.name} in local league <{self.league.slug}>"
+        return f"Team <{self.slug}>: {self.name} in local league <{self.local_league.slug}>"
     
 class Player(models.Model):
     POSITIONS = [
