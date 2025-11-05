@@ -1,3 +1,4 @@
+from functools import cached_property
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib import admin
@@ -84,7 +85,7 @@ class TeamParticipationMatch(models.Model):
         Team,
         on_delete=models.PROTECT,
         verbose_name="Team participating in the match",
-        related_name='participations'
+        related_name='match_participations'
     )
     match = models.ForeignKey(
         'Match',
@@ -103,7 +104,7 @@ class TeamParticipationMatch(models.Model):
         default=0,
     )
 
-    @property
+    @cached_property
     @admin.display(
         description="Computed Score",
         boolean=False,
@@ -170,7 +171,7 @@ class Match(models.Model):
 
     @property
     def score_text(self):
-        participations = self.teams.through.objects.filter(match=self)
+        participations = self.participations.all()
         if participations.count() != 2:
             return "N/A"
         home_team = participations.get(is_home=True)
@@ -179,7 +180,7 @@ class Match(models.Model):
     
     @property
     def name(self):
-        participations = self.teams.through.objects.filter(match=self)
+        participations = self.participations.all()
         if participations.count() != 2:
             return "N/A"
         home_team = participations.get(is_home=True)

@@ -76,12 +76,12 @@ class LocalLeagueViewSet(viewsets.ModelViewSet):
     lookup_field = 'slug'
 
 class TeamViewSet(viewsets.ModelViewSet):
-    queryset = Team.objects.all()
+    queryset = Team.objects.select_related('local_league').all()
     serializer_class = TeamSerializer
     lookup_field = 'slug'
 
 class PlayerViewSet(viewsets.ModelViewSet):
-    queryset = Player.objects.all()
+    queryset = Player.objects.select_related('team').all()
     serializer_class = PlayerSerializer
 
 class StadiumViewSet(viewsets.ModelViewSet):
@@ -89,7 +89,7 @@ class StadiumViewSet(viewsets.ModelViewSet):
     serializer_class = StadiumSerializer
 
 class MatchViewSet(viewsets.ModelViewSet):
-    queryset = Match.objects.all()
+    queryset = Match.objects.select_related('stadium').prefetch_related('participations__team__local_league').all()
     serializer_class = MatchSerializer
 
 

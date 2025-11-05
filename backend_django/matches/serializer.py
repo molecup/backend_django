@@ -29,7 +29,18 @@ class TeamSerializer(ExtraFieldsSerializer,serializers.ModelSerializer):
         model = Team
         fields = '__all__'
         extra_fields = ['players']   
-        depth = 1     
+        depth = 1    
+
+class TeamSerializerNoplayers(serializers.ModelSerializer):
+    local_league = serializers.SlugRelatedField(
+        read_only=False,
+        queryset=LocalLeague.objects.all(),
+        slug_field='slug'
+    )
+
+    class Meta:
+        model = Team
+        fields = '__all__'
 
 
 class PlayerSerializer(serializers.ModelSerializer):
@@ -73,7 +84,7 @@ class TeamParticipationMatchSerializer(serializers.ModelSerializer):
     #     queryset=Team.objects.all(),
     #     slug_field='slug'
     # )
-    team = TeamSerializer(read_only=True)
+    team = TeamSerializerNoplayers(read_only=True)
     events = MatchEventSerializer(many=True, read_only=True)
     class Meta:
         model = TeamParticipationMatch
