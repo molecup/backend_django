@@ -106,9 +106,9 @@ DATABASES = {
 
 DATABASES['default'] = dj_database_url.parse(env('DATABASE_URL'))
 
-STATIC_ROOT = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
 
-STATIC_URL = os.path.join(BASE_DIR, STATIC_ROOT)
+STATIC_URL = '/static/'
 
 
 # Password validation
