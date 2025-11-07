@@ -106,6 +106,10 @@ DATABASES = {
 
 DATABASES['default'] = dj_database_url.parse(env('DATABASE_URL'))
 
+STATIC_ROOT = 'static/'
+
+STATIC_URL = os.path.join(BASE_DIR, STATIC_ROOT)
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
