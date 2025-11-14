@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'knox',
     'nested_inline',
     'nested_admin',
     'matches',
@@ -67,13 +68,20 @@ MIDDLEWARE = [
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'knox.auth.TokenAuthentication',
         'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        # 'rest_framework.authentication.BasicAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
         # 'rest_framework.permissions.DjangoModelPermissions',
         'rest_framework.permissions.DjangoModelPermissionsOrAnonReadOnly'
     ]
+}
+
+REST_KNOX = {
+    'USER_SERIALIZER': 'player_registration.serializer.UserSerializer',
+    'AUTH_HEADER_PREFIX': 'Bearer',
 }
 
 ROOT_URLCONF = 'backend_django.urls'

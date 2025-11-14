@@ -15,10 +15,10 @@ class Player(models.Model):
                                     blank=True,
                                     default=None)
     user = models.OneToOneField(User, on_delete=models.PROTECT, related_name='player_user')
-    first_name = models.CharField("First name", max_length=30)
-    last_name = models.CharField("Last name", max_length=30)
+    first_name = models.CharField("First name", max_length=30, null=True, blank=True)
+    last_name = models.CharField("Last name", max_length=30, null=True, blank=True)
     date_of_birth = models.DateField("Date of birth", null=True, blank=True)
-    code_fiscal = models.CharField("Fiscal Code", max_length=16, unique=True)
+    code_fiscal = models.CharField("Fiscal Code", max_length=16, unique=True, null=True, blank=True)
     shirt_number = models.PositiveSmallIntegerField("Shirt number", null=True, blank=True, validators=[
         MaxValueValidator(99, message="Shirt number cannot exceed 99"),
         MinValueValidator(1, message="Shirt number must be at least 1")
