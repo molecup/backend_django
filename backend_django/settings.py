@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'nested_inline',
     'nested_admin',
     'matches',
+    'player_registration',
 ]
 
 MIDDLEWARE = [
