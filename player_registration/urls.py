@@ -8,8 +8,8 @@ from .views import *
 
 
 router = routers.DefaultRouter()
-router.register(r'players', PlayerViewSet)
-router.register(r'player-lists', PlayerListViewSet)
+router.register(r'players', PlayerViewSet, basename='player')
+router.register(r'player-lists', PlayerListViewSet, basename='player-list')
 router.register(r'player-registration', PlayerRegistrationViewSet, basename='player-registration')
 
 urlpatterns = [

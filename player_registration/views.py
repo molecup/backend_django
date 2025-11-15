@@ -3,33 +3,33 @@ from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated 
 from .models import Player, PlayerList
 from .serializer import PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
+from .permissions import AllowSelf, AllowIfManager
 
 
 
 # Create your views here.
 class PlayerViewSet(viewsets.ModelViewSet):
-    queryset = Player.objects.all()
+    # queryset = Player.objects.all()
     serializer_class = PlayerSerializer
+    permission_classes = [IsAuthenticated & (AllowSelf | AllowIfManager)]
+
+    def get_queryset(self):
+        return Player.objects.filter(user = self.request.user) | Player.objects.filter(player_list__manager=self.request.user)
 
 class PlayerListViewSet(viewsets.ModelViewSet):
-    queryset = PlayerList.objects.all()
+    # queryset = PlayerList.objects.all()
     serializer_class = PlayerListSerializer
+    permission_classes = [IsAuthenticated & AllowIfManager]
 
-# # add view for Player registration 
-# @api_view(['POST'])
-# @permission_classes([AllowAny])
-# def register_player(request):
-#     serializer = PlayerRegistrationSerializer(data=request.data)
-#     if serializer.is_valid():
-#         player = serializer.save()
-#         return Response({'status': 'Player registered successfully'}, status=status.HTTP_201_CREATED)
-#     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def get_queryset(self):
+        return PlayerList.objects.filter(manager=self.request.user)
+
 
 class PlayerRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     http_method_names = ['post']
