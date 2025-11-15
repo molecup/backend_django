@@ -39,12 +39,6 @@ class Player(models.Model):
     ]
     shirt_size = models.CharField("Shirt size", max_length=5, choices=SHIRT_SIZES, null=True, blank=True)  
     position = models.CharField("Playing position", max_length=5, choices=POSITIONS, null=True, blank=True)  
-    parent = models.OneToOneField('Parent', 
-                                  default=None,
-                                  on_delete=models.PROTECT, 
-                                  related_name='player_parent', 
-                                  null=True, 
-                                  blank=True)
 
     def __str__(self):
         return f"Player {self.first_name} {self.last_name} (Mail: {self.user.email})"
@@ -54,6 +48,8 @@ class Parent(models.Model):
     last_name = models.CharField("Last name", max_length=30)
     date_of_birth = models.DateField("Date of birth", null=True, blank=True)
     code_fiscal = models.CharField("Fiscal Code", max_length=16)
+
+    player = models.OneToOneField(Player, on_delete=models.CASCADE, related_name='parent', verbose_name="Player associated with this parent")
 
     def __str__(self):
         return f"Parent {self.first_name} {self.last_name}"
