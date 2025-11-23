@@ -1,3 +1,7 @@
+import logging
+
+logger = logging.getLogger(__name__)
+
 from rest_framework import serializers
 from .models import Player, Parent, PlayerList
 from django.contrib.auth.models import User
@@ -5,27 +9,27 @@ from django.contrib.auth.models import User
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = "__all__"
-
-class PlayerListSerializer(serializers.ModelSerializer):
-    registration_token = serializers.ReadOnlyField()
-    class Meta:
-        model = PlayerList
-        fields = ['id', 'name', 'manager', 'registration_token', 'team']
+        fields = ['first_name', 'last_name', 'date_of_birth', 'code_fiscal']
         
 class PlayerListRestrictedSerializer(serializers.ModelSerializer):
     class Meta:
         model = PlayerList
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'registration_fee', 'submitted_at']
+
+class UserShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email']
 
 class PlayerSerializer(serializers.ModelSerializer):
     parent = ParentSerializer(required=False, allow_null=True)
     player_list = PlayerListRestrictedSerializer(read_only=True)
+    user = UserShortSerializer(read_only=True)
 
     class Meta:
         model = Player
         fields = [
-            'id', 'user', 'first_name', 'last_name', 'date_of_birth',
+            'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'privacy_accepted_at', 'registration_status',
             'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list'
         ]
 
@@ -44,13 +48,17 @@ class PlayerSerializer(serializers.ModelSerializer):
             setattr(instance, attr, value)
 
         if parent_data:
-            if instance.parent:
+            if hasattr(instance, 'parent'):
                 for attr, value in parent_data.items():
                     setattr(instance.parent, attr, value)
                 instance.parent.save()
             else:
-                parent_instance = Parent.objects.create(**parent_data)
+                parent_instance = Parent.objects.create(**parent_data, player=instance)
                 instance.parent = parent_instance
+
+        if parent_data is None and hasattr(instance, 'parent'):
+            instance.parent.delete()
+            instance.parent = None
 
         instance.save()
         return instance
@@ -100,3 +108,41 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'email', 'player_user', 'player_list_manager']
+
+class PlayerForListSerializer(serializers.ModelSerializer):
+    first_name = serializers.ReadOnlyField()
+    last_name = serializers.ReadOnlyField()
+    date_of_birth = serializers.ReadOnlyField()
+    email = serializers.ReadOnlyField(source='user.email')
+    id = serializers.IntegerField()
+    class Meta:
+        model = Player
+        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'shirt_number', 'shirt_size', 'position']
+
+class PlayerListSerializer(serializers.ModelSerializer):
+    registration_token = serializers.ReadOnlyField()
+    registration_fee = serializers.ReadOnlyField()
+    submitted_at = serializers.ReadOnlyField()
+    name = serializers.ReadOnlyField()
+    players = PlayerForListSerializer(many=True, read_only=False)
+
+    class Meta:
+        model = PlayerList
+        fields = ['id', 'name', 'registration_token', 'registration_fee', 'submitted_at', 'players']
+
+    def update(self, instance, validated_data):
+        # Prevent updates to registration_token, registration_fee, and submitted_at
+        players = validated_data.pop('players', [])
+        for player_data in players:
+            player_id = player_data.get('id')
+            try:
+                player_instance = instance.players.get(id=player_id)
+                logger.debug(f"Updating player {player_id} with data: {player_data}")
+                for attr, value in player_data.items():
+                    if attr in ["shirt_number", "shirt_size", "position"]:
+                        setattr(player_instance, attr, value)
+                player_instance.save()
+            except Player.DoesNotExist:
+                raise serializers.ValidationError(f"Player with id {player_id} does not exist in this player list. With data: {players}")
+                continue  # or handle the error as needed
+        return super().update(instance, validated_data)

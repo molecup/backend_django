@@ -39,6 +39,13 @@ class Player(models.Model):
     ]
     shirt_size = models.CharField("Shirt size", max_length=5, choices=SHIRT_SIZES, null=True, blank=True)  
     position = models.CharField("Playing position", max_length=5, choices=POSITIONS, null=True, blank=True)  
+    privacy_accepted_at = models.DateTimeField("Privacy policy accepted at", null=True, blank=True, default=None)
+    REGISTRATION_STATUSES = [
+        ('PEND', 'Pending'),
+        ('EDIT', 'Editable'),
+        ('SUB', 'Submitted'),
+    ]
+    registration_status = models.CharField("Registration status", max_length=6, choices=REGISTRATION_STATUSES, default='PEND')
 
     def __str__(self):
         return f"Player {self.first_name} {self.last_name} (Mail: {self.user.email})"
@@ -65,6 +72,8 @@ class PlayerList(models.Model):
                              default=None)
     manager = models.OneToOneField(User, on_delete=models.PROTECT, related_name='player_list_manager')
     registration_token = models.CharField("Registration token", max_length=100, unique=True)
+    registration_fee = models.DecimalField("Registration fee", max_digits=8, decimal_places=2, default=0.00)
+    submitted_at = models.DateTimeField("Submitted at", null=True, blank=True, default=None)
 
     def save(self, *args, **kwargs):
         if not self.registration_token:
