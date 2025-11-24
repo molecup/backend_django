@@ -1,0 +1,14 @@
+Ciao {% if user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %},
+
+Hai ricevuto questa email perché è stato creato un account a tuo nome nel Sistema di Registrazione Giocatori LCS..
+
+
+Per verificare il tuo indirizzo email e completare la registrazione del tuo account, clicca sul link qui sotto:
+{{ verification_link }}
+
+Se il link non si apre, copialo e incollalo nella barra degli indirizzi del tuo browser.
+
+Se non hai richiesto questa verifica o pensi che l'email sia stata inviata per errore, ignora questo messaggio o contatta il supporto.
+
+Cordiali saluti,
+Team di supporto LCS

@@ -53,3 +53,20 @@ def send_welcome_email(reset_request, token):
     email = EmailMultiAlternatives(subject, text_content, from_email, [to_email])
     email.attach_alternative(html_content, "text/html")
     email.send(fail_silently=True)
+
+def send_email_verification_email(verification, token):
+    subject = "Verifica il tuo indirizzo email"
+    from_email = settings.EMAIL_HOST_USER
+    to_email = verification.user.email
+
+    context = {
+        'user': verification.user,
+        'verification_link': f"{settings.FRONTEND_URL_BASE}/verify-email?mail={verification.user.email}&token={token}",
+    }
+
+    text_content = render_to_string('mail/email_verification.txt', context)
+    html_content = render_to_string('mail/email_verification.html', context)
+
+    email = EmailMultiAlternatives(subject, text_content, from_email, [to_email])
+    email.attach_alternative(html_content, "text/html")
+    email.send(fail_silently=True)

@@ -48,6 +48,7 @@ class Player(models.Model):
         ('SUB', 'Submitted'),
     ]
     registration_status = models.CharField("Registration status", max_length=6, choices=REGISTRATION_STATUSES, default='PEND')
+    email_verified = models.BooleanField("Email verified", default=False)
 
     def __str__(self):
         return f"Player {self.first_name} {self.last_name} (Mail: {self.user.email})"
@@ -80,9 +81,9 @@ class PlayerList(models.Model):
     def save(self, *args, **kwargs):
         if not self.registration_token:
             # generate a URL-safe random token and ensure uniqueness
-            token = secrets.token_urlsafe(32)
+            token = secrets.token_urlsafe(8)
             while PlayerList.objects.filter(registration_token=token).exists():
-                token = secrets.token_urlsafe(32)
+                token = secrets.token_urlsafe(8)
             self.registration_token = token
         super().save(*args, **kwargs)
 
@@ -130,3 +131,22 @@ class PasswordResetRequest(models.Model):
             expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=duration_days)
         )
         return new_request, token
+    
+class UserMailVerification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verifications')
+    verified_at = models.DateTimeField("Verified at", auto_now_add=True)
+    created_at = models.DateTimeField("Created at", auto_now_add=True)
+    token = models.CharField("Verification token", max_length=64)
+
+    def __str__(self):
+        return f"Verification for {self.user.email} at {self.verified_at}"
+    
+    @staticmethod
+    def create_verification(user):
+        token = secrets.token_urlsafe(32)
+        hashed_token = make_password(token)
+        new_verification = UserMailVerification.objects.create(
+            user=user,
+            token=hashed_token,
+        )
+        return new_verification, token

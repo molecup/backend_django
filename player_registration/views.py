@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated 
 from .models import DeletionRequest, Player, PlayerList
-from .serializer import CreatePasswordResetRequestSerializer, DeletionRequestSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
+from .serializer import ConfirmUserMailVerificationSerializer, CreatePasswordResetRequestSerializer, CreateUserMailVerificationSerializer, DeletionRequestSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
@@ -61,4 +61,14 @@ class CreatePasswordResetRequestViewSet(mixins.CreateModelMixin, viewsets.Generi
     http_method_names = ['post']
     permission_classes = [AllowAny]
     serializer_class = CreatePasswordResetRequestSerializer
+
+class CreateUserMailVerificationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    permission_classes = [AllowAny]
+    serializer_class = CreateUserMailVerificationSerializer
+
+class ConfirmUserMailVerificationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    permission_classes = [AllowAny]
+    serializer_class = ConfirmUserMailVerificationSerializer
 

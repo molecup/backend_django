@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from player_registration.mailer import send_password_reset_email, send_welcome_email
 
-from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList
+from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 
 class ParentInline(admin.StackedInline):
     model = Parent
@@ -23,11 +23,11 @@ class PlayerAdmin(admin.ModelAdmin):
     search_fields = ('first_name', 'last_name', 'shirt_number', 'player_list__name', 'user__email', 'code_fiscal')
     list_filter = ('position', 'player_list__name', 'player_list__team__local_league__name')
     list_editable = ('shirt_number', 'position', 'shirt_size')
-    readonly_fields = ('user', 'privacy_accepted_at')
+    readonly_fields = ('user', 'privacy_accepted_at', 'registration_status', 'email_verified')
 
     fieldsets = (
         (None, {
-            'fields': ('user', 'player_list', 'privacy_accepted_at', 'registration_status')
+            'fields': ('user', 'player_list', 'privacy_accepted_at', 'registration_status', 'email_verified')
         }),
         ('Personal Info', {
             'fields': ('first_name', 'last_name', 'date_of_birth', 'code_fiscal')
@@ -136,4 +136,12 @@ class PasswordResetRequestAdmin(admin.ModelAdmin):
     search_fields = ('user__email',)
     list_filter = (isUsedFilter,)
     readonly_fields = ('token', 'created_at', 'expires_at', 'used_at', 'used')
+    search_help_text = "Search by user email."
+
+
+@admin.register(UserMailVerification)
+class EmailVerificationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'user', 'created_at', 'verified_at')
+    search_fields = ('user__email',)
+    readonly_fields = ('token', 'created_at', 'verified_at', 'user')
     search_help_text = "Search by user email."

@@ -15,6 +15,8 @@ router.register(r'player-registration-for-manager', PlayerRegistrationForManager
 router.register(r'deletion-requests', DeletionRequestViewSet, basename='deletion-request')
 router.register(r'reset-password-requests', ResetPasswordRequestViewSet, basename='reset-password-request')
 router.register(r'create-password-reset-request', CreatePasswordResetRequestViewSet, basename='create-password-reset-request')
+router.register(r'create-user-mail-verification', CreateUserMailVerificationViewSet, basename='create-user-mail-verification')
+router.register(r'confirm-user-mail-verification', ConfirmUserMailVerificationViewSet, basename='confirm-user-mail-verification')
 
 urlpatterns = [
     path('', include(router.urls)),

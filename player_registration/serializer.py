@@ -1,12 +1,12 @@
 import datetime
 import logging
-from .mailer import send_deletion_request_notification, send_password_reset_email
+from .mailer import send_deletion_request_notification, send_email_verification_email, send_password_reset_email
 from  django.contrib.auth.hashers import check_password
 
 logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
-from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList
+from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 from django.contrib.auth.models import User
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -28,13 +28,24 @@ class PlayerSerializer(serializers.ModelSerializer):
     parent = ParentSerializer(required=False, allow_null=True)
     player_list = PlayerListRestrictedSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
+    email_verified = serializers.ReadOnlyField()
 
     class Meta:
         model = Player
         fields = [
             'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'privacy_accepted_at', 'registration_status',
-            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list'
+            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified'
         ]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        player = self.instance
+        #prevent submission status change to SUB if email is not verified
+        if player and player.registration_status != 'SUB' and attrs.get('registration_status') == 'SUB':
+            if not player.email_verified:
+                raise serializers.ValidationError("Cannot submit registration: email not verified.")
+        return attrs
+    
 
     def create(self, validated_data):
         parent_data = validated_data.pop('parent', None)
@@ -93,6 +104,9 @@ class PlayerRegistrationSerializer(serializers.Serializer):
         player_list = PlayerList.objects.get(registration_token=registration_token)
 
         player = Player.objects.create(user=user, player_list=player_list)
+
+        verification, token = UserMailVerification.create_verification(user)
+        send_email_verification_email(verification, token)
         return player
     
 class PlayerShortSerializer(serializers.ModelSerializer):
@@ -117,7 +131,7 @@ class PlayerRegistrationForManagerSerializer(serializers.Serializer):
         request = self.context.get('request')
         user = request.user
         player_list = user.player_list_manager
-        player = Player.objects.create(user=user, player_list=player_list)
+        player = Player.objects.create(user=user, player_list=player_list, email_verified=True)
         return {'player': player}
 
     
@@ -236,7 +250,7 @@ class ResetPasswordRequestSerializer(serializers.Serializer):
     def create(self, validated_data):
         new_password = validated_data.get('new_password')
         reset_request = validated_data.get('reset_request')
-        
+
         user = reset_request.user
         user.set_password(new_password)
         user.save()
@@ -263,3 +277,58 @@ class CreatePasswordResetRequestSerializer(serializers.Serializer):
         reset_request, token = PasswordResetRequest.create_request(user=user)
         send_password_reset_email(reset_request, token)
         return reset_request
+    
+class ConfirmUserMailVerificationSerializer(serializers.Serializer):
+    mail = serializers.EmailField(write_only=True)
+    token = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        mail = attrs.get('mail')
+        token = attrs.get('token')
+
+        try:
+            verifications = UserMailVerification.objects.filter(user__email=mail)
+        except UserMailVerification.DoesNotExist:
+            raise serializers.ValidationError("Invalid verification token.")
+        
+        if not verifications.exists():
+            raise serializers.ValidationError("Invalid verification token.")
+
+        for verification in verifications:
+            if check_password(token, verification.token):
+                break
+        else:
+            raise serializers.ValidationError("Invalid verification token.")
+
+        attrs['verification'] = verification
+        return attrs
+
+    def create(self, validated_data):
+        verification = validated_data.get('verification')
+        verification.verified_at = datetime.datetime.now(datetime.timezone.utc)
+        verification.save()
+        player = verification.user.player_user
+        player.email_verified = True
+        player.save()
+
+        return verification
+    
+class CreateUserMailVerificationSerializer(serializers.Serializer):
+    email = serializers.EmailField(write_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        email = attrs.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email.")
+        attrs['user'] = user
+        return attrs
+
+    def create(self, validated_data):
+        user = validated_data.get('user')
+        verification, token = UserMailVerification.create_verification(user)
+        send_email_verification_email(verification, token)
+        return verification
