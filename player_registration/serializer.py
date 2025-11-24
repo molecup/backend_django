@@ -1,5 +1,6 @@
 import datetime
 import logging
+from .mailer import send_deletion_request_notification
 
 logger = logging.getLogger(__name__)
 
@@ -179,4 +180,5 @@ class DeletionRequestSerializer(serializers.ModelSerializer):
         requestor = self.context['request'].user
         requested_at = datetime.datetime.now()
         deletion_request = DeletionRequest.objects.create(requested_by=requestor, requested_at=requested_at, player_to_be_deleted=validated_data.get('player_to_be_deleted'), status='PENDING')
+        send_deletion_request_notification(deletion_request)
         return deletion_request
