@@ -4,8 +4,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated 
-from .models import Player, PlayerList
-from .serializer import PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer
+from .models import DeletionRequest, Player, PlayerList
+from .serializer import DeletionRequestSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
@@ -38,4 +38,12 @@ class PlayerRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet
 
 class LoginView(KnoxLoginView):
     authentication_classes = [BasicAuthentication]
+
+class DeletionRequestViewSet(viewsets.ModelViewSet):
+    http_method_names = ['get', 'post' ]
+    serializer_class = DeletionRequestSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return DeletionRequest.objects.filter(requested_by=self.request.user)
 

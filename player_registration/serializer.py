@@ -1,9 +1,10 @@
+import datetime
 import logging
 
 logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
-from .models import Player, Parent, PlayerList
+from .models import DeletionRequest, Player, Parent, PlayerList
 from django.contrib.auth.models import User
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -146,3 +147,36 @@ class PlayerListSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Player with id {player_id} does not exist in this player list. With data: {players}")
                 continue  # or handle the error as needed
         return super().update(instance, validated_data)
+    
+class DeletionRequestSerializer(serializers.ModelSerializer):
+    status = serializers.ReadOnlyField()
+    requested_at = serializers.ReadOnlyField()
+    requested_by = serializers.PrimaryKeyRelatedField(read_only=True)
+    player_info = PlayerForListSerializer(source='player_to_be_deleted', read_only=True)
+
+
+
+    class Meta:
+        model = DeletionRequest
+        fields = ['id', 'player_to_be_deleted', 'requested_at', 'requested_by', 'status', 'player_info']
+
+    def validate(self, attrs):
+        # check if a pending deletion request already exists for the user
+        player = attrs.get('player_to_be_deleted')
+        if DeletionRequest.objects.filter(player_to_be_deleted=player, status='PENDING').exists():
+            raise serializers.ValidationError("A pending deletion request already exists for this user.")
+        # check if the requestor is a list manager and the user to be deleted is in their player list
+        requestor = self.context['request'].user
+        if not hasattr(requestor, 'player_list_manager'):
+            raise serializers.ValidationError("Only player list managers can request user deletions.")
+        player_list = requestor.player_list_manager
+        if player.player_list != player_list:
+            raise serializers.ValidationError("The user to be deleted is not in your player list.")
+        
+        return super().validate(attrs)
+
+    def create(self, validated_data):
+        requestor = self.context['request'].user
+        requested_at = datetime.datetime.now()
+        deletion_request = DeletionRequest.objects.create(requested_by=requestor, requested_at=requested_at, player_to_be_deleted=validated_data.get('player_to_be_deleted'), status='PENDING')
+        return deletion_request

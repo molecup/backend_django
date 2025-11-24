@@ -1,6 +1,7 @@
+import datetime
 from django.contrib import admin
 
-from .models import Player, Parent, PlayerList
+from .models import DeletionRequest, Player, Parent, PlayerList
 
 class ParentInline(admin.StackedInline):
     model = Parent
@@ -57,3 +58,42 @@ class ParentAdmin(admin.ModelAdmin):
     list_editable = ('first_name', 'last_name', 'code_fiscal')
 
     search_help_text = "Search by first name, last name, or fiscal code."
+
+
+
+@admin.register(DeletionRequest)
+class DeletionRequestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'player_to_be_deleted', 'requested_by', 'requested_at', 'status')
+    search_fields = ('player_to_be_deleted__user__email', 'requested_by__email', 'status')
+    list_filter = ('status',)
+    readonly_fields = ('requested_at', 'deletion_info', 'player_to_be_deleted', 'requested_by', 'status')
+    search_help_text = "Search by player to be deleted email, requested by email, or status."
+    
+    actions = ['fullfill_deletion_request', 'reject_deletion_request']
+
+    def get_actions(self, request):
+        actions = super().get_actions(request)
+        if 'delete_selected' in actions:
+            del actions['delete_selected']
+        return actions
+
+    @admin.action(description='Fulfill selected deletion requests')
+    def fullfill_deletion_request(self, request, queryset):
+        for deletion_request in queryset.filter(status='PENDING'):
+            deletion_request.status = 'APPROVED'
+            deletion_request.deletion_info = f"Player {deletion_request.player_to_be_deleted} deleted on {datetime.datetime.now()} by admin {request.user.email}."
+            deletion_request.save()
+            player = deletion_request.player_to_be_deleted
+
+            user = player.user
+            player.delete()
+            #also delete the user if they are not managing any player list
+            if not hasattr(user, 'player_list_manager'):
+                user.delete()
+                
+            # Delete the player
+            # Update the deletion request status
+
+    @admin.action(description='Reject selected deletion requests')
+    def reject_deletion_request(self, request, queryset):
+        queryset.filter(status='PENDING').update(status='REJECTED')

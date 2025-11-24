@@ -86,3 +86,18 @@ class PlayerList(models.Model):
 
     def __str__(self):
         return f"PlayerList: {self.name}. Managed by {self.manager.email}"
+    
+class DeletionRequest(models.Model):
+    player_to_be_deleted = models.ForeignKey(Player, on_delete=models.SET_NULL, related_name='deletion_requests', null=True, blank=True)
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='deletion_requests_made')
+    requested_at = models.DateTimeField("Requested at", auto_now_add=True)
+    deletion_info = models.TextField("Information about deletion request", null=True, blank=True, editable=False)
+
+    status = models.CharField("Status", max_length=20, choices=[
+        ('PENDING', 'Pending'),
+        ('APPROVED', 'Approved'),
+        ('REJECTED', 'Rejected'),
+    ], default='PENDING')
+
+    def __str__(self):
+        return f"Deletion request for {self.player_to_be_deleted.user.email if self.player_to_be_deleted else 'Unknown'} by {self.requested_by.email} at {self.requested_at}"

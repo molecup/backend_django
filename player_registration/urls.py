@@ -11,6 +11,7 @@ router = routers.DefaultRouter()
 router.register(r'players', PlayerViewSet, basename='player')
 router.register(r'player-lists', PlayerListViewSet, basename='player-list')
 router.register(r'player-registration', PlayerRegistrationViewSet, basename='player-registration')
+router.register(r'deletion-requests', DeletionRequestViewSet, basename='deletion-request')
 
 urlpatterns = [
     path('', include(router.urls)),
