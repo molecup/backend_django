@@ -1,5 +1,7 @@
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.template.loader import render_to_string
 
 def send_deletion_request_notification(deletion_request):
     subject = f"Player Deletion Request: {deletion_request.player_to_be_deleted.user.email}"
