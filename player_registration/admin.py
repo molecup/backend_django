@@ -1,7 +1,9 @@
 import datetime
 from django.contrib import admin
 
-from .models import DeletionRequest, Player, Parent, PlayerList
+from player_registration.mailer import send_password_reset_email, send_welcome_email
+
+from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList
 
 class ParentInline(admin.StackedInline):
     model = Parent
@@ -21,10 +23,11 @@ class PlayerAdmin(admin.ModelAdmin):
     search_fields = ('first_name', 'last_name', 'shirt_number', 'player_list__name', 'user__email', 'code_fiscal')
     list_filter = ('position', 'player_list__name', 'player_list__team__local_league__name')
     list_editable = ('shirt_number', 'position', 'shirt_size')
+    readonly_fields = ('user', 'privacy_accepted_at')
 
     fieldsets = (
         (None, {
-            'fields': ('user', 'player_list')
+            'fields': ('user', 'player_list', 'privacy_accepted_at', 'registration_status')
         }),
         ('Personal Info', {
             'fields': ('first_name', 'last_name', 'date_of_birth', 'code_fiscal')
@@ -45,6 +48,15 @@ class PlayerListAdmin(admin.ModelAdmin):
     list_editable = ('name', 'team')
     readonly_fields = ('registration_token',)
     search_help_text = "Search by team name or manager email."
+
+    actions = ['send_password_set_email']
+
+    @admin.action(description='Send password reset email to list manager')
+    def send_password_set_email(self, request, queryset):
+        for player_list in queryset:
+            reset_request, token = PasswordResetRequest.create_request(user=player_list.manager)
+            send_welcome_email(reset_request, token)
+        
 
 @admin.register(Parent)
 class ParentAdmin(admin.ModelAdmin):
@@ -97,3 +109,31 @@ class DeletionRequestAdmin(admin.ModelAdmin):
     @admin.action(description='Reject selected deletion requests')
     def reject_deletion_request(self, request, queryset):
         queryset.filter(status='PENDING').update(status='REJECTED')
+
+
+
+@admin.register(PasswordResetRequest)
+class PasswordResetRequestAdmin(admin.ModelAdmin):
+    class isUsedFilter(admin.SimpleListFilter):
+        title = 'Used'
+        parameter_name = 'usedAt'
+
+        def lookups(self, request, model_admin):
+            return (
+                ('Used', 'Used'),
+                ('Not used', 'Not used'),
+            )
+
+        def queryset(self, request, queryset):
+            value = self.value()
+            if value == 'Used':
+                return queryset.filter(used_at__isnull=False)
+            elif value == 'Not used':
+                return queryset.exclude(used_at__isnull=False)
+            return queryset
+        
+    list_display = ('id', 'user', 'created_at', 'expires_at', 'used')
+    search_fields = ('user__email',)
+    list_filter = (isUsedFilter,)
+    readonly_fields = ('token', 'created_at', 'expires_at', 'used_at', 'used')
+    search_help_text = "Search by user email."

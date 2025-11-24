@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="it">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Benvenuto — Imposta la tua password</title>
+    <style>
+        body { background-color:#f6f6f6; font-family: Arial, sans-serif; margin:0; padding:20px; }
+        .container { max-width:600px; margin:0 auto; background:#ffffff; border-radius:6px; overflow:hidden; }
+        .header { padding:20px; background:#0b6fb6; color:#ffffff; text-align:left; }
+        .content { padding:24px; color:#333333; line-height:1.5; }
+        .button { display:inline-block; padding:12px 20px; background:#0b6fb6; color:#ffffff; text-decoration:none; border-radius:4px; }
+        .small { font-size:13px; color:#666666; }
+        .footer { padding:16px; text-align:center; font-size:13px; color:#888888; }
+        .link-block { word-break:break-all; }
+    </style>
+</head>
+<body>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+            <td>
+                <div class="container">
+                    <div class="header">
+                        <h1 style="margin:0; font-size:18px;">Benvenuto in LCS</h1>
+                    </div>
+
+                    <div class="content">
+                        <p style="margin-top:0;">
+                            {% if user.first_name %}{{ user.get_full_name }}{% else %}{{ user.username }}{% endif %},
+                        </p>
+
+                        <p>
+                            Hai ricevuto l'accesso come manager nel Sistema di Registrazione Giocatori LCS. Per completare l'attivazione del tuo account devi impostare la password iniziale.
+                        </p>
+
+                        <p style="text-align:center; margin:24px 0;">
+                            <a class="button" href="{{ reset_link }}" target="_blank" rel="noopener">Imposta la password</a>
+                        </p>
+
+                        <p class="small">
+                            Il link per impostare la password scadrà il {{ expires_at }}.
+                        </p>
+
+                        <p class="small">
+                            Se il pulsante non funziona, copia e incolla il seguente link nel tuo browser:
+                        </p>
+
+                        <p class="link-block" style="margin-bottom:18px;">
+                            <a href="{{ reset_link }}" target="_blank" rel="noopener" style="color:#0b6fb6; text-decoration:underline;">{{ reset_link }}</a>
+                        </p>
+
+                        <p class="small">
+                            Se non hai richiesto questa registrazione o ritieni che l'email sia stata inviata per errore, ignora questo messaggio o contatta il supporto.
+                        </p>
+
+                        <p style="margin-top:20px;">
+                            Cordiali saluti,<br>
+                            Team di supporto LCS
+                        </p>
+                    </div>
+
+                    <div class="footer">
+                        <p class="small" style="margin:0;">Se non riconosci questa attività, contatta il supporto.</p>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

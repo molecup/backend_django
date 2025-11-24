@@ -1,11 +1,12 @@
 import datetime
 import logging
-from .mailer import send_deletion_request_notification
+from .mailer import send_deletion_request_notification, send_password_reset_email
+from  django.contrib.auth.hashers import check_password
 
 logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
-from .models import DeletionRequest, Player, Parent, PlayerList
+from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList
 from django.contrib.auth.models import User
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -98,6 +99,29 @@ class PlayerShortSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
         fields = ['id', 'first_name', 'last_name']
+    
+class PlayerRegistrationForManagerSerializer(serializers.Serializer):
+    player = PlayerShortSerializer(read_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get('request')
+        if not hasattr(request.user, 'player_list_manager'):
+            raise serializers.ValidationError("User is not a player list manager.")
+        if hasattr(request.user, 'player_user'):
+            raise serializers.ValidationError("Player already registered for this user.")
+
+        return attrs
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user
+        player_list = user.player_list_manager
+        player = Player.objects.create(user=user, player_list=player_list)
+        return {'player': player}
+
+    
+
 
 class PlayerListShortSerializer(serializers.ModelSerializer):
     class Meta:
@@ -182,3 +206,60 @@ class DeletionRequestSerializer(serializers.ModelSerializer):
         deletion_request = DeletionRequest.objects.create(requested_by=requestor, requested_at=requested_at, player_to_be_deleted=validated_data.get('player_to_be_deleted'), status='PENDING')
         send_deletion_request_notification(deletion_request)
         return deletion_request
+    
+class ResetPasswordRequestSerializer(serializers.Serializer):
+    token = serializers.CharField(write_only=True)
+    mail = serializers.CharField(write_only=True)
+    new_password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        token = attrs.get('token')
+        mail = attrs.get('mail')
+
+        try:
+            reset_requests = PasswordResetRequest.objects.filter(user__email=mail, used_at__isnull=True)
+        except PasswordResetRequest.DoesNotExist:
+            raise serializers.ValidationError("Invalid or used password reset token.")
+        if not reset_requests.exists():
+            raise serializers.ValidationError("Invalid or used password reset token.")
+        for reset_request in reset_requests:
+            if check_password(token, reset_request.token):
+                if reset_request.expires_at > datetime.datetime.now(datetime.timezone.utc):
+                    break
+        else:
+            raise serializers.ValidationError("Invalid or expired password reset token.")
+        
+        attrs['reset_request'] = reset_request
+        return attrs
+    
+    def create(self, validated_data):
+        new_password = validated_data.get('new_password')
+        reset_request = validated_data.get('reset_request')
+        
+        user = reset_request.user
+        user.set_password(new_password)
+        user.save()
+        reset_request.used_at = datetime.datetime.now(datetime.timezone.utc)
+        reset_request.save()
+        return reset_request
+    
+class CreatePasswordResetRequestSerializer(serializers.Serializer):
+    mail = serializers.EmailField(write_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        mail = attrs.get('mail')
+        try:
+            user = User.objects.get(email=mail)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No user found with this email.")
+        attrs['user'] = user
+        return attrs
+
+    def create(self, validated_data):
+        mail = validated_data.get('mail')
+        user = User.objects.get(email=mail)
+        reset_request, token = PasswordResetRequest.create_request(user=user)
+        send_password_reset_email(reset_request, token)
+        return reset_request

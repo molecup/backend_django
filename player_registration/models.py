@@ -1,7 +1,9 @@
+import datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 import secrets
+from django.contrib.auth.hashers import make_password
 
 
 
@@ -101,3 +103,30 @@ class DeletionRequest(models.Model):
 
     def __str__(self):
         return f"Deletion request for {self.player_to_be_deleted.user.email if self.player_to_be_deleted else 'Unknown'} by {self.requested_by.email} at {self.requested_at}"
+    
+class PasswordResetRequest(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_requests')
+    token = models.CharField("Reset token", max_length=64)
+    created_at = models.DateTimeField("Created at")
+    expires_at = models.DateTimeField("Expires at")
+    used_at = models.DateTimeField("Used at", null=True, blank=True)
+
+    #add a computed field to check if the token is used
+    @property
+    def used(self):
+        return self.used_at is not None
+
+    def __str__(self):
+        return f"Password reset request for {self.user.email} at {self.created_at} (Used: {self.used})"
+    
+    @staticmethod
+    def create_request(user, duration_days=1):
+        token = secrets.token_urlsafe(32)
+        hashed_token = make_password(token)
+        new_request = PasswordResetRequest.objects.create(
+            user=user,
+            token=hashed_token,
+            created_at=datetime.datetime.now(datetime.timezone.utc),
+            expires_at=datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(days=duration_days)
+        )
+        return new_request, token

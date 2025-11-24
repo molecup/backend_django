@@ -5,7 +5,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated 
 from .models import DeletionRequest, Player, PlayerList
-from .serializer import DeletionRequestSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer
+from .serializer import CreatePasswordResetRequestSerializer, DeletionRequestSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
@@ -36,6 +36,11 @@ class PlayerRegistrationViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet
     permission_classes = [AllowAny]
     serializer_class = PlayerRegistrationSerializer
 
+class PlayerRegistrationForManagerViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    permission_classes = [IsAuthenticated]
+    serializer_class = PlayerRegistrationForManagerSerializer
+
 class LoginView(KnoxLoginView):
     authentication_classes = [BasicAuthentication]
 
@@ -46,4 +51,14 @@ class DeletionRequestViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return DeletionRequest.objects.filter(requested_by=self.request.user)
+    
+class ResetPasswordRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    permission_classes = [AllowAny]
+    serializer_class = ResetPasswordRequestSerializer
+
+class CreatePasswordResetRequestViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    permission_classes = [AllowAny]
+    serializer_class = CreatePasswordResetRequestSerializer
 

@@ -185,3 +185,7 @@ EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 
 EMAIL_NOTIFICATIONS_ADDRESS = env.list('EMAIL_NOTIFICATIONS_ADDRESS', default=[])
+
+# parameters used in mails
+FRONTEND_URL_BASE = env('FRONTEND_URL_BASE', default='http://localhost:3000')
+ADMIN_URL_BASE = env('ADMIN_URL_BASE', default='http://localhost:8000/admin')
