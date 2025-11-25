@@ -51,7 +51,7 @@ class PlayerListAdmin(admin.ModelAdmin):
 
     actions = ['send_password_set_email']
 
-    @admin.action(description='Send password reset email to list manager')
+    @admin.action(description='Send password activation email to list manager')
     def send_password_set_email(self, request, queryset):
         for player_list in queryset:
             reset_request, token = PasswordResetRequest.create_request(user=player_list.manager)
