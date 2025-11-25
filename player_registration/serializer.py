@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 class ParentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Parent
-        fields = ['first_name', 'last_name', 'date_of_birth', 'code_fiscal']
+        fields = ['first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'code_fiscal']
         
 class PlayerListRestrictedSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,7 +33,7 @@ class PlayerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Player
         fields = [
-            'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'privacy_accepted_at', 'registration_status',
+            'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'privacy_accepted_at', 'registration_status',
             'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified'
         ]
 

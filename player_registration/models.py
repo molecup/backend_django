@@ -20,6 +20,7 @@ class Player(models.Model):
     first_name = models.CharField("First name", max_length=30, null=True, blank=True)
     last_name = models.CharField("Last name", max_length=30, null=True, blank=True)
     date_of_birth = models.DateField("Date of birth", null=True, blank=True)
+    place_of_birth = models.CharField("Place of birth", max_length=64, null=True, blank=True)
     code_fiscal = models.CharField("Fiscal Code", max_length=16, unique=True, null=True, blank=True)
     shirt_number = models.PositiveSmallIntegerField("Shirt number", null=True, blank=True, validators=[
         MaxValueValidator(99, message="Shirt number cannot exceed 99"),
@@ -57,6 +58,7 @@ class Parent(models.Model):
     first_name = models.CharField("First name", max_length=30)
     last_name = models.CharField("Last name", max_length=30)
     date_of_birth = models.DateField("Date of birth", null=True, blank=True)
+    place_of_birth = models.CharField("Place of birth", max_length=64, null=True, blank=True)
     code_fiscal = models.CharField("Fiscal Code", max_length=16)
 
     player = models.OneToOneField(Player, on_delete=models.CASCADE, related_name='parent', verbose_name="Player associated with this parent")

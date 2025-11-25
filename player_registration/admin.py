@@ -30,7 +30,7 @@ class PlayerAdmin(admin.ModelAdmin):
             'fields': ('user', 'player_list', 'privacy_accepted_at', 'registration_status', 'email_verified')
         }),
         ('Personal Info', {
-            'fields': ('first_name', 'last_name', 'date_of_birth', 'code_fiscal')
+            'fields': ('first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'code_fiscal')
         }),
         ('Sport Info', {
             'fields': ('shirt_number', 'shirt_size', 'position')
