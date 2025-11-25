@@ -109,7 +109,7 @@ class DeletionRequest(models.Model):
     
 class PasswordResetRequest(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='password_reset_requests')
-    token = models.CharField("Reset token", max_length=64)
+    token = models.CharField("Reset token", max_length=128)
     created_at = models.DateTimeField("Created at")
     expires_at = models.DateTimeField("Expires at")
     used_at = models.DateTimeField("Used at", null=True, blank=True)
@@ -138,7 +138,7 @@ class UserMailVerification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='verifications')
     verified_at = models.DateTimeField("Verified at", auto_now_add=True)
     created_at = models.DateTimeField("Created at", auto_now_add=True)
-    token = models.CharField("Verification token", max_length=64)
+    token = models.CharField("Verification token", max_length=128)
 
     def __str__(self):
         return f"Verification for {self.user.email} at {self.verified_at}"
