@@ -182,7 +182,6 @@ class BulkUploads(models.Model):
         def process_file(file):
             csv_file = csv.reader(file, delimiter=self.separator)
             header = [x.strip() for x in next(csv_file)]
-            logger.info(f"CSV Header: {header}")
             team_name_idx = header.index(self.team_name_column.strip())
             team_name_short_idx = header.index(self.team_name_short_column.strip())
             manager_email_idx = header.index(self.manager_email_column.strip())
