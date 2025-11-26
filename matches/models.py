@@ -23,12 +23,12 @@ class LocalLeague(models.Model):
 class Team(models.Model):
     slug = models.SlugField(
         "Unique slug",
-        max_length=20, 
+        max_length=40, 
         unique=True,
         null=False,
     )
-    name = models.CharField("Full name", max_length=50)
-    short_name = models.CharField("Short name", max_length=20)
+    name = models.CharField("Full name", max_length=40)
+    short_name = models.CharField("Short name", max_length=10)
     local_league = models.ForeignKey(
         LocalLeague, 
         on_delete=models.PROTECT, 
