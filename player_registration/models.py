@@ -7,6 +7,7 @@ import secrets
 from django.contrib.auth.hashers import make_password
 import csv
 
+from backend_django.storage_backends import PrivateMediaStorage
 from matches.models import Team
 from django.utils.text import slugify
 
@@ -169,7 +170,7 @@ class BulkUploads(models.Model):
     processed = models.BooleanField("Processed", default=False)
     processed_wo_errors = models.BooleanField("Processed without errors", null=True)
     processing_errors = models.TextField("Processing errors", blank=True, default='')
-    file = models.FileField("Upload file", upload_to='bulk_upload_player_lists/')
+    file = models.FileField("Upload file", upload_to='bulk_upload_player_lists/', storage=PrivateMediaStorage())
     team_name_column = models.CharField("Team name column", max_length=50, default='Squadra (nome completo)')
     team_name_short_column = models.CharField("Team short name column", max_length=50, default='Squadra (abbreviazione 3 lettere)')
     manager_email_column = models.CharField("Manager email column", max_length=50, default='Mail referente squadra')
