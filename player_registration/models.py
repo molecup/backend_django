@@ -1,9 +1,17 @@
 import datetime
+import io
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MaxValueValidator, MinValueValidator
 import secrets
 from django.contrib.auth.hashers import make_password
+import csv
+
+from matches.models import Team
+from django.utils.text import slugify
+
+import logging
+logger = logging.getLogger(__name__)
 
 
 
@@ -152,3 +160,73 @@ class UserMailVerification(models.Model):
             token=hashed_token,
         )
         return new_verification, token
+    
+class BulkUploads(models.Model):
+    uploaded_at = models.DateTimeField("Uploaded at", auto_now_add=True)
+    processed_at = models.DateTimeField("Processed at", null=True, blank=True)
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bulk_uploads')
+    local_league = models.ForeignKey('matches.LocalLeague', on_delete=models.CASCADE, related_name='bulk_uploads')
+    processed = models.BooleanField("Processed", default=False)
+    processed_wo_errors = models.BooleanField("Processed without errors", null=True)
+    processing_errors = models.TextField("Processing errors", blank=True, default='')
+    file = models.FileField("Upload file", upload_to='bulk_upload_player_lists/')
+    team_name_column = models.CharField("Team name column", max_length=50, default='Squadra (nome completo)')
+    team_name_short_column = models.CharField("Team short name column", max_length=50, default='Squadra (abbreviazione 3 lettere)')
+    manager_email_column = models.CharField("Manager email column", max_length=50, default='Mail referente squadra')
+    separator = models.CharField("CSV Separator", max_length=5, default=';')
+
+    def __str__(self):
+        return f"Bulk upload of {self.local_league.name} at {self.uploaded_at} (Processed: {self.processed})"
+
+    def process_bulk_upload(self):
+        def process_file(file):
+            csv_file = csv.reader(file, delimiter=self.separator)
+            header = [x.strip() for x in next(csv_file)]
+            logger.info(f"CSV Header: {header}")
+            team_name_idx = header.index(self.team_name_column.strip())
+            team_name_short_idx = header.index(self.team_name_short_column.strip())
+            manager_email_idx = header.index(self.manager_email_column.strip())
+            for row_id, row in enumerate(csv_file):
+                team_name = row[team_name_idx].strip()
+                team_name_short = row[team_name_short_idx].strip()
+                manager_email = row[manager_email_idx].strip()
+                try:
+                    if manager_email == '':
+                        raise Exception(f"Row {row_id + 2}: Manager email is empty.")
+                    if team_name == '':
+                        raise Exception(f"Row {row_id + 2}: Team name is empty.")
+                    if team_name_short == '':
+                        raise Exception(f"Row {row_id + 2}: Team short name is empty.")
+                    # check if the user exists, if not create it
+                    user, user_created = User.objects.get_or_create(username=manager_email, email=manager_email)
+
+                    if not user_created and hasattr(user, 'player_list_manager'):
+                        raise Exception(f"User {manager_email} already has a player list assigned.")
+                    
+                    # check if a team with that name exists, if not create it
+                    team, team_created = Team.objects.get_or_create(slug=slugify(team_name), name=team_name, short_name=team_name_short, local_league=self.local_league)
+
+                    # check if the player list exists, if it does fail
+                    player_list, pl_created = PlayerList.objects.get_or_create(manager=user)
+                    if not pl_created:
+                        raise Exception(f"User {manager_email} already has a player list assigned.")
+
+                    player_list.name = team_name
+                    player_list.team = team
+                    player_list.save()
+                except Exception as e:
+                    self.processing_errors += f"Row {row_id + 2}: Error processing row: {str(e)}\n"
+                    self.processed_wo_errors = False
+                    continue
+        self.processing_errors = ''
+        self.processed_wo_errors = True
+        with self.file.open('rb') as raw_file:
+            with io.TextIOWrapper(raw_file, encoding='utf-8-sig') as f:
+                try:
+                    process_file(f)
+                except ValueError as e:
+                    self.processing_errors += f"Error: {str(e)}\n"
+                    self.processed_wo_errors = False
+        self.processed = True
+        self.processed_at = datetime.datetime.now(datetime.timezone.utc)
+        self.save()

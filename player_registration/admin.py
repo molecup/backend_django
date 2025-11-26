@@ -3,7 +3,7 @@ from django.contrib import admin
 
 from player_registration.mailer import send_password_reset_email, send_welcome_email
 
-from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
+from .models import BulkUploads, DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 
 class ParentInline(admin.StackedInline):
     model = Parent
@@ -145,3 +145,21 @@ class EmailVerificationAdmin(admin.ModelAdmin):
     search_fields = ('user__email',)
     readonly_fields = ('token', 'created_at', 'verified_at', 'user')
     search_help_text = "Search by user email."
+
+@admin.register(BulkUploads)
+class BulkUploadsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'uploaded_at', 'uploaded_by', 'local_league', 'processed', 'processed_wo_errors')
+    search_fields = ('uploaded_by__email', 'local_league__name')
+    list_filter = ('processed', 'local_league__name')
+    readonly_fields = ('uploaded_at', 'uploaded_by', 'processing_errors', 'processed_at', 'processed_wo_errors')
+    search_help_text = "Search by uploader email or local league name."
+
+    def save_model(self, request, obj, form, change):
+        obj.uploaded_by = request.user  
+        return super().save_model(request, obj, form, change)
+    
+    def process_bulk_upload(self, request, queryset):
+        for bulk_upload in queryset.filter(processed=False):
+            bulk_upload.process_bulk_upload()
+    
+    actions = ['process_bulk_upload']

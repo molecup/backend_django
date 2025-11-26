@@ -177,6 +177,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 # and renames the files with unique names for each version to support long-term caching
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+if DEBUG:
+    MEDIA_ROOT=env('MEDIA_ROOT', default=os.path.join(BASE_DIR, 'media'))
+    MEDIA_URL='/media/'
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -195,3 +199,24 @@ EMAIL_NOTIFICATIONS_ADDRESS = env.list('EMAIL_NOTIFICATIONS_ADDRESS', default=[]
 # parameters used in mails
 FRONTEND_URL_BASE = env('FRONTEND_URL_BASE', default='http://localhost:3000')
 ADMIN_URL_BASE = env('ADMIN_URL_BASE', default='http://localhost:8000/admin')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'player_registration': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}
