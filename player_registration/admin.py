@@ -42,7 +42,7 @@ class PlayerAdmin(admin.ModelAdmin):
 
 @admin.register(PlayerList)
 class PlayerListAdmin(admin.ModelAdmin):
-    list_display = ('id', 'name', 'manager', 'registration_token', 'team')
+    list_display = ('id', 'total_players', 'name', 'manager', 'registration_token', 'team')
     search_fields = ('name', 'manager__email', 'team__name')
     list_filter = ('team__local_league__name',)
     list_editable = ('name', 'team')
@@ -50,6 +50,10 @@ class PlayerListAdmin(admin.ModelAdmin):
     search_help_text = "Search by team name or manager email."
 
     actions = ['send_password_set_email']
+
+    def total_players(self, obj):
+        return obj.players.count()
+    total_players.short_description = 'Players'
 
     @admin.action(description='Send password activation email to list manager')
     def send_password_set_email(self, request, queryset):
