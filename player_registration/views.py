@@ -1,4 +1,5 @@
 # from django.shortcuts import render
+from time import timezone
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -9,7 +10,7 @@ from .serializer import ConfirmUserMailVerificationSerializer, CreatePasswordRes
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
-from .permissions import AllowSelf, AllowIfManager
+from .permissions import AllowSelf, AllowIfManager, AllowEditIfNotSubmitted
 
 
 
@@ -17,7 +18,7 @@ from .permissions import AllowSelf, AllowIfManager
 class PlayerViewSet(viewsets.ModelViewSet):
     # queryset = Player.objects.all()
     serializer_class = PlayerSerializer
-    permission_classes = [IsAuthenticated & (AllowSelf | AllowIfManager)]
+    permission_classes = [IsAuthenticated & (AllowSelf | AllowIfManager) & AllowEditIfNotSubmitted]
 
     def get_queryset(self):
         return Player.objects.filter(user = self.request.user) | Player.objects.filter(player_list__manager=self.request.user)
@@ -25,7 +26,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
 class PlayerListViewSet(viewsets.ModelViewSet):
     # queryset = PlayerList.objects.all()
     serializer_class = PlayerListSerializer
-    permission_classes = [IsAuthenticated & AllowIfManager]
+    permission_classes = [IsAuthenticated & AllowIfManager & AllowEditIfNotSubmitted]
 
     def get_queryset(self):
         return PlayerList.objects.filter(manager=self.request.user)
@@ -71,4 +72,27 @@ class ConfirmUserMailVerificationViewSet(mixins.CreateModelMixin, viewsets.Gener
     http_method_names = ['post']
     permission_classes = [AllowAny]
     serializer_class = ConfirmUserMailVerificationSerializer
+
+# create an API endpoint to submit a playerList. Check if the user is the manager of the playerList. If so, set the submitted_at field to the current time.
+@api_view(['POST'])
+@permission_classes([IsAuthenticated & AllowIfManager])
+def submit_player_list(request, pk):
+    try:
+        player_list = PlayerList.objects.get(pk=pk)
+    except PlayerList.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    if player_list.manager != request.user:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    
+    num_sub_players = player_list.num_submitted_players()
+    if num_sub_players < 22:
+        return Response({"detail": "At least 22 players must be submitted to submit the player list."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if num_sub_players > 25: 
+        return Response({"detail": "No more than 25 players can be submitted to submit the player list."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    player_list.submitted_at = timezone.now()
+    player_list.save()
+    return Response(status=status.HTTP_200_OK)
 

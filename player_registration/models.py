@@ -98,6 +98,14 @@ class PlayerList(models.Model):
             self.registration_token = token
         super().save(*args, **kwargs)
 
+    @property
+    def  num_submitted_players(self):
+        return self.players.filter(registration_status='SUB').count()
+    
+    @property
+    def total_players(self):
+        return self.players.count()
+
     def __str__(self):
         return f"PlayerList: {self.name}. Managed by {self.manager.email}"
     
@@ -229,4 +237,25 @@ class BulkUploads(models.Model):
                     self.processed_wo_errors = False
         self.processed = True
         self.processed_at = datetime.datetime.now(datetime.timezone.utc)
+        self.save()
+
+class MedicalCertificate(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='medical_certificates')
+    uploaded_at = models.DateTimeField("Uploaded at", auto_now_add=True)
+    confirmed_at = models.DateTimeField("Confirmed at", null=True, blank=True, default=None)
+    expires_at = models.DateField("Expires at")
+    file = models.FileField("Medical certificate file", upload_to='medical_certificates/', storage=PrivateMediaStorage())
+
+    def __str__(self):
+        return f"Medical Certificate for {self.player.user.email} uploaded at {self.uploaded_at}"
+    
+    def is_valid(self):
+        if self.confirmed_at is None:
+            return False
+        if self.expires_at < datetime.date.today():
+            return False
+        return True
+    
+    def confirm(self):
+        self.confirmed_at = datetime.datetime.now(datetime.timezone.utc)
         self.save()

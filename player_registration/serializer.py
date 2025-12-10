@@ -6,7 +6,7 @@ from  django.contrib.auth.hashers import check_password
 logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
-from .models import DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
+from .models import DeletionRequest, MedicalCertificate, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 from django.contrib.auth.models import User
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -92,6 +92,10 @@ class PlayerRegistrationSerializer(serializers.Serializer):
         mail = attrs.get('mail')
         if User.objects.filter(email=mail).exists():
             raise serializers.ValidationError("Email is already in use.")
+        # check if the playerlist is submitted already
+        player_list = PlayerList.objects.get(registration_token=registration_token)
+        if player_list.submitted_at is not None:
+            raise serializers.ValidationError("Cannot register new players to a submitted player list.")
         return attrs
 
     def create(self, validated_data):
@@ -124,6 +128,10 @@ class PlayerRegistrationForManagerSerializer(serializers.Serializer):
             raise serializers.ValidationError("User is not a player list manager.")
         if hasattr(request.user, 'player_user'):
             raise serializers.ValidationError("Player already registered for this user.")
+        # check if the player list is submitted already
+        player_list = request.user.player_list_manager
+        if player_list.submitted_at is not None:
+            raise serializers.ValidationError("Cannot register new players to a submitted player list.")
 
         return attrs
     
@@ -157,7 +165,7 @@ class PlayerForListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     class Meta:
         model = Player
-        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'shirt_number', 'shirt_size', 'position']
+        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'shirt_number', 'shirt_size', 'position', 'registration_status']
 
 class PlayerListSerializer(serializers.ModelSerializer):
     registration_token = serializers.ReadOnlyField()
@@ -186,6 +194,7 @@ class PlayerListSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(f"Player with id {player_id} does not exist in this player list. With data: {players}")
                 continue  # or handle the error as needed
         return super().update(instance, validated_data)
+    
     
 class DeletionRequestSerializer(serializers.ModelSerializer):
     status = serializers.ReadOnlyField()
@@ -332,3 +341,30 @@ class CreateUserMailVerificationSerializer(serializers.Serializer):
         verification, token = UserMailVerification.create_verification(user)
         send_email_verification_email(verification, token)
         return verification
+    
+class UploadedMedicalCertificateSerializer(serializers.Serializer):
+    expires_at = serializers.DateField()
+    file = serializers.FileField()
+    confirmed_at = serializers.DateTimeField(required=False, allow_null=True)
+
+
+    def validate(self, attrs):
+        attrs =  super().validate(attrs)
+        request = self.context.get('request')
+        # check certificate has been uploaded by the player themselves
+        player = Player.objects.get(user=request.user)
+        if not player:
+            raise serializers.ValidationError("No player found for this user.")
+    
+    def create(self, validated_data):
+        request = self.context.get('request')
+        player = Player.objects.get(user=request.user)
+        medical_certificate = MedicalCertificate.objects.create(player=player, uploaded_at=datetime.datetime.now(datetime.timezone.utc), expires_at=validated_data.get('expires_at'), file=validated_data.get('file'), confirmed_at=validated_data.get('confirmed_at'))
+        return medical_certificate
+    
+    def update(self, instance, validated_data):
+        instance.expires_at = validated_data.get('expires_at', instance.expires_at)
+        instance.file = validated_data.get('file', instance.file)
+        instance.confirmed_at = validated_data.get('confirmed_at', instance.confirmed_at)
+        instance.save()
+        return instance

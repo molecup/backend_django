@@ -15,3 +15,18 @@ class AllowIfManager(permissions.BasePermission):
         if hasattr(obj, 'player_list'):
             return obj.player_list.manager == request.user
         return False
+    
+
+class AllowEditIfNotSubmitted(permissions.BasePermission):
+    """
+    Custom permission to only allow edits if the player list has not been submitted. (GET requests are always allowed)
+    """
+
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        if hasattr(obj, 'submitted_at'):
+            return obj.submitted_at is None
+        if hasattr(obj, 'player_list'):
+            return obj.player_list.submitted_at is None
+        return False
