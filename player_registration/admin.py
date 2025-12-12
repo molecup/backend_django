@@ -19,7 +19,10 @@ class ParentInline(admin.StackedInline):
 # Register your models here.
 @admin.register(Player)
 class PlayerAdmin(admin.ModelAdmin):
-    list_display = ('id', 'user__email', 'last_name', 'first_name', 'shirt_number', 'position', 'shirt_size', 'player_list__name')
+    def completed(self, obj):
+        return obj.registration_status == 'SUB'
+    
+    list_display = ('id', 'completed', 'user__email', 'last_name', 'first_name', 'shirt_number', 'position', 'shirt_size', 'player_list__name')
     search_fields = ('first_name', 'last_name', 'shirt_number', 'player_list__name', 'user__email', 'code_fiscal')
     list_filter = ('position', 'player_list__name', 'player_list__team__local_league__name')
     list_editable = ('shirt_number', 'position', 'shirt_size')
