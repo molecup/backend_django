@@ -31,7 +31,7 @@ class PlayerAdmin(admin.ModelAdmin):
     search_fields = ('first_name', 'last_name', 'shirt_number', 'player_list__name', 'user__email', 'code_fiscal')
     list_filter = ('position', 'player_list__name', 'player_list__team__local_league__name')
     list_editable = ('shirt_number', 'position', 'shirt_size')
-    readonly_fields = ('user', 'privacy_accepted_at', 'registration_status', 'email_verified')
+    readonly_fields = ('privacy_accepted_at', 'email_verified')
 
     fieldsets = (
         (None, {
