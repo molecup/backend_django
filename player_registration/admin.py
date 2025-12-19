@@ -67,6 +67,12 @@ class PlayerListAdmin(admin.ModelAdmin):
             reset_request, token = PasswordResetRequest.create_request(user=player_list.manager, duration_days=7)
             send_welcome_email(reset_request, token)
 
+    @admin.action(description='Lock playerList')
+    def submit_player_list(self, request, queryset):
+        for player_list in queryset:
+            player_list.submitted_at = datetime.datetime.now()
+            player_list.save()
+
     def export_link(self, obj):
         # return f'/registration/export-player-list/{obj.id}/'
         return mark_safe(f'<a href="/registration/export-player-list/{obj.id}/" target="_blank">Export CSV</a>')
