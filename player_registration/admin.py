@@ -5,6 +5,9 @@ from player_registration.mailer import send_password_reset_email, send_welcome_e
 
 from .models import BulkUploads, DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 
+from django.utils.safestring import mark_safe
+
+
 class ParentInline(admin.StackedInline):
     model = Parent
     extra = 0
@@ -45,7 +48,7 @@ class PlayerAdmin(admin.ModelAdmin):
 
 @admin.register(PlayerList)
 class PlayerListAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_players', 'num_submitted_players', 'name', 'manager', 'registration_token', 'team')
+    list_display = ('id', 'total_players', 'num_submitted_players', 'export_link', 'name', 'manager', 'registration_token', 'team')
     search_fields = ('name', 'manager__email', 'team__name')
     list_filter = ('team__local_league__name', )
     list_editable = ('name', 'team')
@@ -63,6 +66,10 @@ class PlayerListAdmin(admin.ModelAdmin):
         for player_list in queryset:
             reset_request, token = PasswordResetRequest.create_request(user=player_list.manager, duration_days=7)
             send_welcome_email(reset_request, token)
+
+    def export_link(self, obj):
+        # return f'/registration/export-player-list/{obj.id}/'
+        return mark_safe(f'<a href="/registration/export-player-list/{obj.id}/" target="_blank">Export CSV</a>')
         
 
 @admin.register(Parent)

@@ -25,4 +25,5 @@ urlpatterns = [
     path(r'logout/', knox_views.LogoutView.as_view(), name='knox_logout'),
     path(r'logoutall/', knox_views.LogoutAllView.as_view(), name='knox_logoutall'),
     path('submit-player-list/<int:pk>/', submit_player_list, name='submit-player-list'),
+    path('export-player-list/<int:pk>/', export_player_list_csv, name='export-player-list'),
 ]

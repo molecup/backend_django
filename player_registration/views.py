@@ -11,6 +11,8 @@ from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
 from .permissions import AllowSelf, AllowIfManager, AllowEditIfNotSubmitted
+import csv
+from django.http import HttpResponse
 
 
 
@@ -96,3 +98,37 @@ def submit_player_list(request, pk):
     player_list.save()
     return Response(status=status.HTTP_200_OK)
 
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_player_list_csv(request, pk):
+    try:
+        player_list = PlayerList.objects.get(pk=pk)
+    except PlayerList.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+
+    if not (player_list.manager == request.user or request.user.has_perm('player_registration.view_playerlist')):
+        return Response(status=status.HTTP_403_FORBIDDEN)
+
+    players = player_list.players.all()
+    
+    response = HttpResponse(
+        content_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="player_list_{player_list.name}.csv"'},
+    )
+
+    writer = csv.writer(response)
+    writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number' ])
+    for player in players:
+        writer.writerow([
+            'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
+            player.first_name,
+            player.last_name,
+            player.user.email,
+            player.code_fiscal,
+            player.date_of_birth.strftime('%Y-%m-%d') if player.date_of_birth else '',
+            player.place_of_birth or '',
+            player.shirt_size or '',
+            player.shirt_number or ''
+        ])
+    
+    return response
