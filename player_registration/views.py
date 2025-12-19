@@ -1,5 +1,7 @@
 # from django.shortcuts import render
+from io import BytesIO, StringIO
 from time import timezone
+import zipfile
 from rest_framework.response import Response
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
@@ -130,5 +132,62 @@ def export_player_list_csv(request, pk):
             player.shirt_size or '',
             player.shirt_number or ''
         ])
+    
+    return response
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def export_bulk_player_list_csv(request):
+    # Get list of player list IDs from query params
+    pk_list = request.GET.get('pks', '')
+    if not pk_list:
+        return Response({"detail": "No player list IDs provided."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        pks = [int(pk.strip()) for pk in pk_list.split(',')]
+    except ValueError:
+        return Response({"detail": "Invalid player list IDs format."}, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check permissions and filter player lists
+    player_lists = PlayerList.objects.filter(pk__in=pks)
+    
+    if not request.user.has_perm('player_registration.view_playerlist'):
+        return Response(status=status.HTTP_403_FORBIDDEN)
+    
+    if not player_lists.exists():
+        return Response({"detail": "No player lists found."}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Create a zip file containing all CSV files
+    zip_buffer = BytesIO()
+    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+        for player_list in player_lists:
+            players = player_list.players.all()
+            
+            # Create CSV in memory
+            csv_buffer = StringIO()
+            writer = csv.writer(csv_buffer)
+            writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number'])
+            
+            for player in players:
+                writer.writerow([
+                    'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
+                    player.first_name,
+                    player.last_name,
+                    player.user.email,
+                    player.code_fiscal,
+                    player.date_of_birth.strftime('%Y-%m-%d') if player.date_of_birth else '',
+                    player.place_of_birth or '',
+                    player.shirt_size or '',
+                    player.shirt_number or ''
+                ])
+            
+            # Add CSV to zip with sanitized filename
+            safe_name = player_list.name.replace('/', '_').replace('\\', '_')
+            zip_file.writestr(f"player_list_{safe_name}.csv", csv_buffer.getvalue())
+    
+    # Prepare response
+    zip_buffer.seek(0)
+    response = HttpResponse(zip_buffer.read(), content_type='application/zip')
+    response['Content-Disposition'] = 'attachment; filename="player_lists_export.zip"'
     
     return response

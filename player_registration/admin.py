@@ -1,5 +1,7 @@
 import datetime
 from django.contrib import admin
+from django.shortcuts import redirect
+from django.urls import reverse
 
 from player_registration.mailer import send_password_reset_email, send_welcome_email
 
@@ -48,14 +50,14 @@ class PlayerAdmin(admin.ModelAdmin):
 
 @admin.register(PlayerList)
 class PlayerListAdmin(admin.ModelAdmin):
-    list_display = ('id', 'total_players', 'num_submitted_players', 'export_link', 'name', 'manager', 'registration_token', 'team')
+    list_display = ('id', 'is_submitted', 'total_players', 'num_submitted_players', 'export_link', 'name', 'manager', 'registration_token', 'team')
     search_fields = ('name', 'manager__email', 'team__name')
     list_filter = ('team__local_league__name', )
     list_editable = ('name', 'team')
     readonly_fields = ('registration_token',)
     search_help_text = "Search by team name or manager email."
 
-    actions = ['send_password_set_email']
+    actions = ['send_password_set_email', 'submit_player_list', 'export_player_lists_csv']
 
     # def total_players(self, obj):
     #     return obj.players.count()
@@ -73,9 +75,21 @@ class PlayerListAdmin(admin.ModelAdmin):
             player_list.submitted_at = datetime.datetime.now()
             player_list.save()
 
+    @admin.action(description='Export player lists CSV')
+    def export_player_lists_csv(self, request, queryset):
+        # Get selected player list IDs
+        selected_pks = ','.join(str(pk) for pk in queryset.values_list('pk', flat=True))
+        # Redirect to the export view with pks as query parameter
+        export_url = reverse('export-bulk-player-lists') + f'?pks={selected_pks}'
+        return redirect(export_url)
+
     def export_link(self, obj):
         # return f'/registration/export-player-list/{obj.id}/'
         return mark_safe(f'<a href="/registration/export-player-list/{obj.id}/" target="_blank">Export CSV</a>')
+    
+    @admin.display(description='Submitted')
+    def is_submitted(self, obj):
+        return obj.submitted_at is not None
         
 
 @admin.register(Parent)
