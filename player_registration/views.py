@@ -7,8 +7,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated 
-from .models import DeletionRequest, Player, PlayerList
-from .serializer import ConfirmUserMailVerificationSerializer, CreatePasswordResetRequestSerializer, CreateUserMailVerificationSerializer, DeletionRequestSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
+from .models import DeletionRequest, MedicalCertificate, Player, PlayerList
+from .serializer import ConfirmUserMailVerificationSerializer, CreatePasswordResetRequestSerializer, CreateUserMailVerificationSerializer, DeletionRequestSerializer, MedicalCertificateSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
@@ -76,6 +76,15 @@ class ConfirmUserMailVerificationViewSet(mixins.CreateModelMixin, viewsets.Gener
     http_method_names = ['post']
     permission_classes = [AllowAny]
     serializer_class = ConfirmUserMailVerificationSerializer
+
+#N.B. the pk is the player pk
+class MedicalCertificateViewSet(viewsets.ModelViewSet):
+    http_method_names = ['get', 'post', 'put', 'patch', 'delete']
+    permission_classes = [IsAuthenticated & (AllowSelf | AllowIfManager)]
+    serializer_class = MedicalCertificateSerializer
+
+    def get_queryset(self):
+        return MedicalCertificate.objects.filter(player__user=self.request.user) | MedicalCertificate.objects.filter(player__player_list__manager=self.request.user)
 
 # create an API endpoint to submit a playerList. Check if the user is the manager of the playerList. If so, set the submitted_at field to the current time.
 @api_view(['POST'])

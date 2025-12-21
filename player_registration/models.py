@@ -2,7 +2,7 @@ import datetime
 import io
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, FileExtensionValidator
 import secrets
 from django.contrib.auth.hashers import make_password
 import csv
@@ -240,22 +240,26 @@ class BulkUploads(models.Model):
         self.save()
 
 class MedicalCertificate(models.Model):
-    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='medical_certificates')
+    player = models.OneToOneField(Player, on_delete=models.CASCADE, related_name='medical_certificate', primary_key=True)
     uploaded_at = models.DateTimeField("Uploaded at", auto_now_add=True)
-    confirmed_at = models.DateTimeField("Confirmed at", null=True, blank=True, default=None)
-    expires_at = models.DateField("Expires at")
-    file = models.FileField("Medical certificate file", upload_to='medical_certificates/', storage=PrivateMediaStorage())
+    expires_at = models.DateField("Expires at", null=True)
+    submitted_at = models.DateTimeField("Submitted at", null=True, blank=True)
+    file = models.FileField("Medical certificate file", upload_to='medical_certificates/', storage=PrivateMediaStorage(),
+                            validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
 
     def __str__(self):
         return f"Medical Certificate for {self.player.user.email} uploaded at {self.uploaded_at}"
     
     def is_valid(self):
-        if self.confirmed_at is None:
-            return False
         if self.expires_at < datetime.date.today():
             return False
         return True
     
-    def confirm(self):
-        self.confirmed_at = datetime.datetime.now(datetime.timezone.utc)
+    def delete(self, *args, **kwargs):
+        #delete the file from storage
+        self.file.delete(save=False)
+        return super().delete(*args, **kwargs)
+    
+    def mark_as_submitted(self):
+        self.submitted_at = datetime.datetime.now(datetime.timezone.utc)
         self.save()

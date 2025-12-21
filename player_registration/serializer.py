@@ -24,17 +24,23 @@ class UserShortSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'email']
 
+class MedicalCertificateShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MedicalCertificate
+        fields = ['expires_at', 'uploaded_at', 'submitted_at', 'file']
+
 class PlayerSerializer(serializers.ModelSerializer):
     parent = ParentSerializer(required=False, allow_null=True)
     player_list = PlayerListRestrictedSerializer(read_only=True)
     user = UserShortSerializer(read_only=True)
     email_verified = serializers.ReadOnlyField()
+    medical_certificate = MedicalCertificateShortSerializer(read_only=True)
 
     class Meta:
         model = Player
         fields = [
             'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'privacy_accepted_at', 'registration_status',
-            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified'
+            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified', 'medical_certificate'
         ]
 
     def validate(self, attrs):
@@ -342,29 +348,53 @@ class CreateUserMailVerificationSerializer(serializers.Serializer):
         send_email_verification_email(verification, token)
         return verification
     
-class UploadedMedicalCertificateSerializer(serializers.Serializer):
-    expires_at = serializers.DateField()
-    file = serializers.FileField()
-    confirmed_at = serializers.DateTimeField(required=False, allow_null=True)
+class MedicalCertificateSerializer(serializers.ModelSerializer):
+    player = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all())
+    submit = serializers.BooleanField(write_only=True, required=False, default=False)
+    submitted_at = serializers.ReadOnlyField()
 
+    class Meta:
+        model = MedicalCertificate
+        fields = ['player', 'file', 'expires_at', 'uploaded_at', 'submitted_at', 'submit']
 
     def validate(self, attrs):
-        attrs =  super().validate(attrs)
+        attrs = super().validate(attrs)
+        player = attrs.get('player')
         request = self.context.get('request')
-        # check certificate has been uploaded by the player themselves
-        player = Player.objects.get(user=request.user)
-        if not player:
-            raise serializers.ValidationError("No player found for this user.")
+
+        if player is not None:
+            if player.player_list.manager != request.user and player.user != request.user:
+                raise serializers.ValidationError("You do not have permission to upload a medical certificate for this player.")
+        
+        if self.instance:
+            attrs.pop('player', None)  # Remove player from attrs to avoid updating it
+
+        
+        if attrs.get('submit') is not None:
+            if attrs.get('submit'):
+                attrs['submitted_at'] = datetime.datetime.now(datetime.timezone.utc)
+            else:
+                attrs['submitted_at'] = None
+            attrs.pop('submit')
+
+
+        return attrs
     
     def create(self, validated_data):
-        request = self.context.get('request')
-        player = Player.objects.get(user=request.user)
-        medical_certificate = MedicalCertificate.objects.create(player=player, uploaded_at=datetime.datetime.now(datetime.timezone.utc), expires_at=validated_data.get('expires_at'), file=validated_data.get('file'), confirmed_at=validated_data.get('confirmed_at'))
-        return medical_certificate
+        # If a medical certificate already exists for this player, replace it
+        player = validated_data.get('player')
+        try:
+            existing_certificates = MedicalCertificate.objects.get(player=player)
+        except MedicalCertificate.DoesNotExist:
+            pass
+        else:
+            existing_certificates.delete()
+
+            
+        return MedicalCertificate.objects.create(**validated_data)
     
-    def update(self, instance, validated_data):
-        instance.expires_at = validated_data.get('expires_at', instance.expires_at)
-        instance.file = validated_data.get('file', instance.file)
-        instance.confirmed_at = validated_data.get('confirmed_at', instance.confirmed_at)
-        instance.save()
-        return instance
+class AnonymousMedicalCertificateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MedicalCertificate
+        fields = ['id', 'file', 'expires_at', 'uploaded_at']
+    

@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from player_registration.mailer import send_password_reset_email, send_welcome_email
 
-from .models import BulkUploads, DeletionRequest, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
+from .models import BulkUploads, DeletionRequest, MedicalCertificate, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
 
 from django.utils.safestring import mark_safe
 
@@ -16,6 +16,15 @@ class ParentInline(admin.StackedInline):
     verbose_name = "Parent of the Player"
     verbose_name_plural = "Parent of the Player"
     can_delete = False
+    show_change_link = True
+    classes = ['collapse']
+
+class MedicalCertificateInline(admin.StackedInline):
+    model = MedicalCertificate
+    extra = 0
+    verbose_name = "Medical Certificate"
+    verbose_name_plural = "Medical Certificates"
+    can_delete = True
     show_change_link = True
     classes = ['collapse']
 
@@ -46,7 +55,7 @@ class PlayerAdmin(admin.ModelAdmin):
     )
     search_help_text = "Search by first name, last name, shirt number, player list name, user email, or code fiscal."
 
-    inlines = [ParentInline]
+    inlines = [ParentInline, MedicalCertificateInline]
 
 @admin.register(PlayerList)
 class PlayerListAdmin(admin.ModelAdmin):
@@ -197,3 +206,9 @@ class BulkUploadsAdmin(admin.ModelAdmin):
             bulk_upload.process_bulk_upload()
     
     actions = ['process_bulk_upload']
+
+@admin.register(MedicalCertificate)
+class MedicalCertificateAdmin(admin.ModelAdmin):
+    class Meta:
+        model = MedicalCertificate
+        fields = "__all__"

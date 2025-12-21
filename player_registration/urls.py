@@ -17,6 +17,7 @@ router.register(r'reset-password-requests', ResetPasswordRequestViewSet, basenam
 router.register(r'create-password-reset-request', CreatePasswordResetRequestViewSet, basename='create-password-reset-request')
 router.register(r'create-user-mail-verification', CreateUserMailVerificationViewSet, basename='create-user-mail-verification')
 router.register(r'confirm-user-mail-verification', ConfirmUserMailVerificationViewSet, basename='confirm-user-mail-verification')
+router.register(r'medical-certificates', MedicalCertificateViewSet, basename='medical-certificate')
 
 urlpatterns = [
     path('', include(router.urls)),
