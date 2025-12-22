@@ -128,7 +128,7 @@ def export_player_list_csv(request, pk):
     )
 
     writer = csv.writer(response)
-    writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number' ])
+    writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position']) 
     for player in players:
         writer.writerow([
             'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
@@ -139,7 +139,8 @@ def export_player_list_csv(request, pk):
             player.date_of_birth.strftime('%Y-%m-%d') if player.date_of_birth else '',
             player.place_of_birth or '',
             player.shirt_size or '',
-            player.shirt_number or ''
+            player.shirt_number or '',
+            player.position or ''
         ])
     
     return response
@@ -175,7 +176,7 @@ def export_bulk_player_list_csv(request):
             # Create CSV in memory
             csv_buffer = StringIO()
             writer = csv.writer(csv_buffer)
-            writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number'])
+            writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position'])
             
             for player in players:
                 writer.writerow([
@@ -187,7 +188,8 @@ def export_bulk_player_list_csv(request):
                     player.date_of_birth.strftime('%Y-%m-%d') if player.date_of_birth else '',
                     player.place_of_birth or '',
                     player.shirt_size or '',
-                    player.shirt_number or ''
+                    player.shirt_number or '',
+                    player.position or ''
                 ])
             
             # Add CSV to zip with sanitized filename
