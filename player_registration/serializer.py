@@ -1,12 +1,14 @@
 import datetime
 import logging
+
 from .mailer import send_deletion_request_notification, send_email_verification_email, send_password_reset_email
 from  django.contrib.auth.hashers import check_password
+
 
 logger = logging.getLogger(__name__)
 
 from rest_framework import serializers
-from .models import DeletionRequest, MedicalCertificate, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
+from .models import DeletionRequest, MedicalCertificate, PasswordResetRequest, PaymentTransaction, PaymentTransaction, Player, Parent, PlayerList, UserMailVerification
 from django.contrib.auth.models import User
 
 class ParentSerializer(serializers.ModelSerializer):
@@ -40,7 +42,7 @@ class PlayerSerializer(serializers.ModelSerializer):
         model = Player
         fields = [
             'id', 'user', 'first_name', 'last_name', 'date_of_birth', 'place_of_birth', 'privacy_accepted_at', 'registration_status',
-            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified', 'medical_certificate'
+            'code_fiscal', 'shirt_number', 'shirt_size', 'position', 'parent', 'player_list', 'email_verified', 'medical_certificate', "payed"
         ]
 
     def validate(self, attrs):
@@ -398,3 +400,40 @@ class AnonymousMedicalCertificateSerializer(serializers.ModelSerializer):
         model = MedicalCertificate
         fields = ['id', 'file', 'expires_at', 'uploaded_at']
     
+class CheckOutPaymentSerializer(serializers.Serializer):
+    session_id = serializers.CharField(write_only=True, required=True)
+    player_id = serializers.PrimaryKeyRelatedField(queryset=Player.objects.all(), write_only=True)
+    scope = serializers.CharField(write_only=True, required=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        session_id = attrs.get('session_id')
+        scope = attrs.get('scope')
+
+        if scope not in dict(PaymentTransaction.PAYMENT_SCOPES).keys():
+            raise serializers.ValidationError("Invalid payment scope.")
+
+        if scope == 'PLAYER_REGISTRATION_FEE':
+            player_id = attrs.get('player_id')
+            #check if player exists
+            try:
+                player = Player.objects.get(id=player_id.id)
+            except Player.DoesNotExist:
+                raise serializers.ValidationError("Player does not exist.")
+        
+        return attrs
+            
+
+    def create(self, validated_data):
+        payment_transaction = PaymentTransaction.objects.create(
+            session_id=validated_data.get('session_id'),
+        )
+
+        if validated_data.get('scope') == 'PLAYER_REGISTRATION_FEE':
+            player_id = validated_data.get('player_id')
+            player = Player.objects.get(id=player_id.id)
+            player.payment_transactions.add(payment_transaction)
+            player.save()
+
+        return payment_transaction
+

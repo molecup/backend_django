@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from player_registration.mailer import send_password_reset_email, send_welcome_email
 
-from .models import BulkUploads, DeletionRequest, MedicalCertificate, PasswordResetRequest, Player, Parent, PlayerList, UserMailVerification
+from .models import BulkUploads, DeletionRequest, MedicalCertificate, PasswordResetRequest, PaymentTransaction, Player, Parent, PlayerList, UserMailVerification
 
 from django.utils.safestring import mark_safe
 
@@ -28,6 +28,15 @@ class MedicalCertificateInline(admin.StackedInline):
     show_change_link = True
     classes = ['collapse']
 
+class PaymentTransactionInline(admin.StackedInline):
+    model = PaymentTransaction
+    extra = 0
+    verbose_name = "Payment Transaction"
+    verbose_name_plural = "Payment Transactions"
+    can_delete = False
+    can_create = False
+    show_change_link = True
+    classes = ['collapse']
 
 
 # Register your models here.
@@ -36,11 +45,11 @@ class PlayerAdmin(admin.ModelAdmin):
     def completed(self, obj):
         return obj.registration_status == 'SUB'
     
-    list_display = ('id', 'completed', 'user__email', 'last_name', 'first_name', 'shirt_number', 'position', 'shirt_size', 'player_list__name')
+    list_display = ('id', 'completed', 'payed', 'user__email', 'last_name', 'first_name', 'shirt_number', 'position', 'shirt_size', 'player_list__name')
     search_fields = ('first_name', 'last_name', 'shirt_number', 'player_list__name', 'user__email', 'code_fiscal')
     list_filter = ('position', 'player_list__name', 'player_list__team__local_league__name')
     list_editable = ('shirt_number', 'position', 'shirt_size')
-    readonly_fields = ('privacy_accepted_at', 'email_verified')
+    readonly_fields = ('privacy_accepted_at', 'email_verified', 'payment_transactions')
 
     fieldsets = (
         (None, {
@@ -51,6 +60,9 @@ class PlayerAdmin(admin.ModelAdmin):
         }),
         ('Sport Info', {
             'fields': ('shirt_number', 'shirt_size', 'position')
+        }),
+        ('Payment Info', {
+            'fields': ('payment_transactions',)
         }),
     )
     search_help_text = "Search by first name, last name, shirt number, player list name, user email, or code fiscal."
@@ -212,3 +224,9 @@ class MedicalCertificateAdmin(admin.ModelAdmin):
     class Meta:
         model = MedicalCertificate
         fields = "__all__"
+
+@admin.register(PaymentTransaction)
+class PaymentTransactionAdmin(admin.ModelAdmin):
+    class Meta:
+        model = PaymentTransaction
+    readonly_fields = ('session_id', 'payer_email', 'amount_total', 'currency', 'scope', 'created_at', 'verified_at', 'error_message')

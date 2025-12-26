@@ -7,8 +7,8 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import generics
 from rest_framework.permissions import AllowAny, IsAuthenticated 
-from .models import DeletionRequest, MedicalCertificate, Player, PlayerList
-from .serializer import ConfirmUserMailVerificationSerializer, CreatePasswordResetRequestSerializer, CreateUserMailVerificationSerializer, DeletionRequestSerializer, MedicalCertificateSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
+from .models import DeletionRequest, MedicalCertificate, PaymentTransaction, Player, PlayerList
+from .serializer import CheckOutPaymentSerializer, ConfirmUserMailVerificationSerializer, CreatePasswordResetRequestSerializer, CreateUserMailVerificationSerializer, DeletionRequestSerializer, MedicalCertificateSerializer, PlayerRegistrationForManagerSerializer, PlayerSerializer, PlayerListSerializer, PlayerRegistrationSerializer, ResetPasswordRequestSerializer
 from rest_framework import mixins
 from knox.views import LoginView as KnoxLoginView
 from rest_framework.authentication import BasicAuthentication
@@ -202,3 +202,11 @@ def export_bulk_player_list_csv(request):
     response['Content-Disposition'] = 'attachment; filename="player_lists_export.zip"'
     
     return response
+
+class PaymentTransactionViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
+    http_method_names = ['post']
+    serializer_class = CheckOutPaymentSerializer 
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        return PaymentTransaction.objects.filter(payer_email=self.request.user.email)

@@ -7,6 +7,9 @@ import secrets
 from django.contrib.auth.hashers import make_password
 import csv
 
+import stripe
+
+from backend_django.settings import STRIPE_SECRET_KEY
 from backend_django.storage_backends import PrivateMediaStorage
 from matches.models import Team
 from django.utils.text import slugify
@@ -60,8 +63,57 @@ class Player(models.Model):
     registration_status = models.CharField("Registration status", max_length=6, choices=REGISTRATION_STATUSES, default='PEND')
     email_verified = models.BooleanField("Email verified", default=False)
 
+    payment_transactions = models.ManyToManyField('PaymentTransaction', related_name='player_subscriptions', blank=True)
+    
+    @property
+    def payed(self):
+        return any([p.verify_payment() for p in self.payment_transactions.all()])
     def __str__(self):
         return f"Player {self.first_name} {self.last_name} (Mail: {self.user.email})"
+    
+class PaymentTransaction(models.Model):
+    session_id = models.CharField("Stripe session ID", max_length=128, unique=True)
+    amount_total = models.IntegerField("Amount total (in cents)", null=True, blank=True)
+    currency = models.CharField("Currency", max_length=10, null=True, blank=True)
+    payer_email = models.EmailField("Payer email", null=True, blank=True)
+    created_at = models.DateTimeField("Created at", auto_now_add=True)
+    verified_at = models.DateTimeField("Verified at", null=True, blank=True)
+    error_message = models.TextField("Error message", null=True, blank=True)
+    PAYMENT_SCOPES = [
+        ('PLAYER_REGISTRATION_FEE', 'Player Registration Fee'),
+    ]
+    scope = models.CharField("Payment scope", max_length=50, choices=PAYMENT_SCOPES)
+
+    @property
+    def is_verified(self):
+        return self.verified_at is not None
+
+    def verify_payment(self):
+        if self.is_verified:
+            return  True
+        
+        stripe.api_key = STRIPE_SECRET_KEY
+        try:
+            session = stripe.checkout.Session.retrieve(self.session_id)
+        except stripe.error.InvalidRequestError:
+            self.error_message += f"{datetime.datetime.now(datetime.timezone.utc)}: Invalid Stripe session ID.\n"
+            self.save()
+            return False
+        if session.payment_status != 'paid':
+            self.error_message += f"{datetime.datetime.now(datetime.timezone.utc)}: Payment status is {session.payment_status}, not 'paid'.\n"
+            self.save()
+            return False
+        if session.payment_status == 'paid':
+            self.payer_email = session.customer_details.email
+            self.amount_total = session.amount_total
+            self.currency = session.currency
+            self.verified_at = datetime.datetime.now(datetime.timezone.utc)
+            self.save()
+            return True
+
+    def __str__(self):
+        return f"PaymentTransaction of {self.amount_total / 100} {self.currency} by {self.payer_email} at {self.created_at}"
+
     
 class Parent(models.Model):
     first_name = models.CharField("First name", max_length=30)
@@ -175,6 +227,7 @@ class BulkUploads(models.Model):
     processed_at = models.DateTimeField("Processed at", null=True, blank=True)
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='bulk_uploads')
     local_league = models.ForeignKey('matches.LocalLeague', on_delete=models.CASCADE, related_name='bulk_uploads')
+    registration_fee = models.DecimalField("Price", max_digits=8, decimal_places=2, default=0.00)
     processed = models.BooleanField("Processed", default=False)
     processed_wo_errors = models.BooleanField("Processed without errors", null=True)
     processing_errors = models.TextField("Processing errors", blank=True, default='')
@@ -212,7 +265,7 @@ class BulkUploads(models.Model):
                         raise Exception(f"User {manager_email} already has a player list assigned.")
                     
                     # check if a team with that name exists, if not create it
-                    team, team_created = Team.objects.get_or_create(slug=slugify(team_name), name=team_name, short_name=team_name_short, local_league=self.local_league)
+                    team, team_created = Team.objects.get_or_create(slug=slugify(team_name), name=team_name, short_name=team_name_short, local_league=self.local_league, defaults={'registration_fee': self.registration_fee})
 
                     # check if the player list exists, if it does fail
                     player_list, pl_created = PlayerList.objects.get_or_create(manager=user)
