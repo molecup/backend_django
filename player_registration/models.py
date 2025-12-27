@@ -78,7 +78,7 @@ class PaymentTransaction(models.Model):
     payer_email = models.EmailField("Payer email", null=True, blank=True)
     created_at = models.DateTimeField("Created at", auto_now_add=True)
     verified_at = models.DateTimeField("Verified at", null=True, blank=True)
-    error_message = models.TextField("Error message", null=True, blank=True)
+    error_message = models.TextField("Error message", default="", null=False, blank=True)
     PAYMENT_SCOPES = [
         ('PLAYER_REGISTRATION_FEE', 'Player Registration Fee'),
     ]
@@ -112,8 +112,13 @@ class PaymentTransaction(models.Model):
             return True
 
     def __str__(self):
-        return f"PaymentTransaction of {self.amount_total / 100} {self.currency} by {self.payer_email} at {self.created_at}"
-
+        if self.amount_total is None:
+            amount_display = "unverified amount"
+        else:
+            amount_display = f"{self.amount_total / 100} {self.currency}"
+        if self.is_verified:
+            return f"PaymentTransaction of {amount_display} by {self.payer_email} at {self.created_at}"
+        return f"Unverified PaymentTransaction created at {self.created_at}"
     
 class Parent(models.Model):
     first_name = models.CharField("First name", max_length=30)
