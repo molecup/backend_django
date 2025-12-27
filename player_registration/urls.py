@@ -19,6 +19,7 @@ router.register(r'create-user-mail-verification', CreateUserMailVerificationView
 router.register(r'confirm-user-mail-verification', ConfirmUserMailVerificationViewSet, basename='confirm-user-mail-verification')
 router.register(r'medical-certificates', MedicalCertificateViewSet, basename='medical-certificate')
 router.register(r'payment-transactions', PaymentTransactionViewSet, basename='payment-transaction')
+router.register(r'change-player-mail', ChangePlayerMailViewSet, basename='change-player-mail')
 
 urlpatterns = [
     path('', include(router.urls)),

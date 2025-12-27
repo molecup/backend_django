@@ -437,3 +437,39 @@ class CheckOutPaymentSerializer(serializers.Serializer):
 
         return payment_transaction
 
+class ChangePlayerMailSerializer(serializers.Serializer):
+    new_email = serializers.EmailField(write_only=True)
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        new_email = attrs.get('new_email')
+        request = self.context.get('request')
+
+        if User.objects.filter(email=new_email).exists():
+            raise serializers.ValidationError("Email is already in use.")
+        
+        #check if the email is not already verified
+        user = request.user
+        if not hasattr(user, 'player_user'):
+            raise serializers.ValidationError("User is not a player.")
+        if user.player_user.email_verified:
+            raise serializers.ValidationError("Email is already verified, cannot change email.")
+            
+
+        return attrs
+
+    def create(self, validated_data):
+        new_email = validated_data.get('new_email')
+        request = self.context.get('request')
+        user = request.user
+        user.email = new_email
+        user.username = new_email
+        user.save()
+
+        # Invalidate previous verifications
+        UserMailVerification.objects.filter(user=user).delete()
+
+        verification, token = UserMailVerification.create_verification(user)
+        send_email_verification_email(verification, token)
+
+        return user
