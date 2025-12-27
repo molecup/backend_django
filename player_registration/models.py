@@ -270,7 +270,7 @@ class BulkUploads(models.Model):
                         raise Exception(f"User {manager_email} already has a player list assigned.")
                     
                     # check if a team with that name exists, if not create it
-                    team, team_created = Team.objects.get_or_create(slug=slugify(team_name), name=team_name, short_name=team_name_short, local_league=self.local_league, defaults={'registration_fee': self.registration_fee})
+                    team, team_created = Team.objects.get_or_create(slug=slugify(team_name), name=team_name, short_name=team_name_short, local_league=self.local_league)
 
                     # check if the player list exists, if it does fail
                     player_list, pl_created = PlayerList.objects.get_or_create(manager=user)
@@ -279,6 +279,7 @@ class BulkUploads(models.Model):
 
                     player_list.name = team_name
                     player_list.team = team
+                    player_list.registration_fee = self.registration_fee
                     player_list.save()
                 except Exception as e:
                     self.processing_errors += f"Row {row_id + 2}: Error processing row: {str(e)}\n"
