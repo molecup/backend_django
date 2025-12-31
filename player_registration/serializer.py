@@ -173,7 +173,7 @@ class PlayerForListSerializer(serializers.ModelSerializer):
     id = serializers.IntegerField()
     class Meta:
         model = Player
-        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'shirt_number', 'shirt_size', 'position', 'registration_status']
+        fields = ['id', 'first_name', 'last_name', 'email', 'date_of_birth', 'shirt_number', 'shirt_size', 'position', 'registration_status', 'payed']
 
 class PlayerListSerializer(serializers.ModelSerializer):
     registration_token = serializers.ReadOnlyField()
