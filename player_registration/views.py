@@ -128,10 +128,11 @@ def export_player_list_csv(request, pk):
     )
 
     writer = csv.writer(response)
-    writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position']) 
+    writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position']) 
     for player in players:
         writer.writerow([
             'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
+            'Received' if player.payed else 'Missing',
             player.first_name,
             player.last_name,
             player.user.email,
@@ -176,11 +177,12 @@ def export_bulk_player_list_csv(request):
             # Create CSV in memory
             csv_buffer = StringIO()
             writer = csv.writer(csv_buffer)
-            writer.writerow(['Status', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position'])
+            writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position'])
             
             for player in players:
                 writer.writerow([
                     'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
+                    'Received' if player.payed else 'Missing',
                     player.first_name,
                     player.last_name,
                     player.user.email,
