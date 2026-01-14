@@ -1,6 +1,6 @@
 # from django.shortcuts import render
+import datetime
 from io import BytesIO, StringIO
-from time import timezone
 import zipfile
 from rest_framework.response import Response
 from rest_framework import status, viewsets
@@ -98,14 +98,14 @@ def submit_player_list(request, pk):
     if player_list.manager != request.user:
         return Response(status=status.HTTP_404_NOT_FOUND)
     
-    num_sub_players = player_list.num_submitted_players()
-    if num_sub_players < 22:
-        return Response({"detail": "At least 22 players must be submitted to submit the player list."}, status=status.HTTP_400_BAD_REQUEST)
+    num_sub_players = player_list.num_submitted_players
+    if num_sub_players < 11:
+        return Response({"detail": "At least 11 players must be submitted to submit the player list."}, status=status.HTTP_400_BAD_REQUEST)
 
     if num_sub_players > 25: 
         return Response({"detail": "No more than 25 players can be submitted to submit the player list."}, status=status.HTTP_400_BAD_REQUEST)
     
-    player_list.submitted_at = timezone.now()
+    player_list.submitted_at = datetime.datetime.now(datetime.timezone.utc)
     player_list.save()
     return Response(status=status.HTTP_200_OK)
 
