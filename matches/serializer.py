@@ -10,13 +10,6 @@ class ExtraFieldsSerializer(serializers.Serializer):
             return expanded_fields + self.Meta.extra_fields
         else:
             return expanded_fields
-        
-class LocalLeagueSerializer(ExtraFieldsSerializer, serializers.ModelSerializer):
-    class Meta:
-        model = LocalLeague
-        fields = '__all__'
-        extra_fields = ['teams', 'stadiums']
-        depth = 1
 
 class TeamSerializer(ExtraFieldsSerializer,serializers.ModelSerializer):
     local_league = serializers.SlugRelatedField(
@@ -28,10 +21,10 @@ class TeamSerializer(ExtraFieldsSerializer,serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = '__all__'
-        extra_fields = ['players']   
+        extra_fields = ['players', 'pts', 'record']   
         depth = 1    
 
-class TeamSerializerNoplayers(serializers.ModelSerializer):
+class TeamSerializerNoplayers(ExtraFieldsSerializer, serializers.ModelSerializer):
     local_league = serializers.SlugRelatedField(
         read_only=False,
         queryset=LocalLeague.objects.all(),
@@ -41,6 +34,17 @@ class TeamSerializerNoplayers(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = '__all__'
+        extra_fields = ['pts', 'record']
+        depth = 1
+
+class LocalLeagueSerializer(ExtraFieldsSerializer, serializers.ModelSerializer):
+    teams = TeamSerializerNoplayers(many=True, read_only=True)
+    
+    class Meta:
+        model = LocalLeague
+        fields = '__all__'
+        extra_fields = ['teams', 'stadiums', 'staff', 'partners']
+        depth = 1
 
 
 class PlayerSerializer(serializers.ModelSerializer):

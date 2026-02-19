@@ -20,6 +20,7 @@ h11==0.16.0
 idna==3.11
 jmespath==1.0.1
 packaging==25.0
+pillow==12.1.1
 psycopg2-binary==2.9.11
 python-dateutil==2.9.0.post0
 python-monkey-business==1.1.0

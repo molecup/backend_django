@@ -92,6 +92,15 @@ class MatchViewSet(viewsets.ModelViewSet):
     queryset = Match.objects.select_related('stadium').prefetch_related('participations__team__local_league').all()
     serializer_class = MatchSerializer
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        local_league_slug = self.request.query_params.get('local-league')
+        if local_league_slug:
+            # Filter matches where participating teams belong to the given league slug
+            # distinct() is important because a match has multiple teams (participations) 
+            # and could return duplicates otherwise.
+            queryset = queryset.filter(participations__team__local_league__slug=local_league_slug).distinct()
+        return queryset
 
 class MatchEventViewSet(viewsets.ModelViewSet):
     queryset = MatchEvent.objects.all()

@@ -1,6 +1,7 @@
 from django.contrib import admin
-from .models import LocalLeague, Match, MatchEvent, Stadium, Team, Player, TeamParticipationMatch
+from .models import LocalLeague, Match, MatchEvent, Partner, Stadium, Staff, Team, Player, TeamParticipationMatch
 from nested_admin import NestedStackedInline, NestedModelAdmin, NestedTabularInline
+from django import forms
 
 
 # inlines for many-to-many relationships
@@ -71,9 +72,49 @@ class TeamParticipationMatchInline(NestedTabularInline):
 #     readonly_fields = ('score',)
 #     inlines = (MatchEventInline,)
 
+class StaffLocalLeagueInline(admin.TabularInline):
+    model = Staff
+    extra = 1
+    verbose_name = "Staff in this Local League"
+    verbose_name_plural = verbose_name
+    classes = ['collapse']
+
+class PartnerLocalLeagueInline(admin.TabularInline):
+    model = Partner
+    extra = 1
+    verbose_name = "Partners in this Local League"
+    verbose_name_plural = verbose_name
+    classes = ['collapse']
+
+class LocalLeagueForm(forms.ModelForm):
+    instagram = forms.CharField(required=False, label="Instagram Handle")
+    tiktok = forms.CharField(required=False, label="TikTok Handle")
+
+    class Meta:
+        model = LocalLeague
+        fields = '__all__'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Populate the form fields from the JSON field if instance exists
+        if self.instance and self.instance.pk and self.instance.socials:
+            self.fields['instagram'].initial = self.instance.socials.get('instagram', '')
+            self.fields['tiktok'].initial = self.instance.socials.get('tiktok', '')
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        # Pack fields back into the JSON field
+        instance.socials = {
+            'instagram': self.cleaned_data.get('instagram', ''),
+            'tiktok': self.cleaned_data.get('tiktok', '')
+        }
+        if commit:
+            instance.save()
+        return instance
+
 @admin.register(LocalLeague)
 class LocalLeagueAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'name', 'title', 'subtitle')
+    list_display = ('slug', 'name', 'title', 'subtitle', 'logo')
     search_fields = ('slug', 'name', 'title')
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ("name", "title", "subtitle")
@@ -82,17 +123,18 @@ class LocalLeagueAdmin(admin.ModelAdmin):
             'fields': ('slug', 'name')
         }),
         ('Page Info', {
-            'fields': ('title', 'subtitle')
+            'fields': ('title', 'subtitle', 'instagram', 'tiktok', 'logo', 'background'),
         }),
     )
-    inlines = (StadiumLocalLeagueInline, TeamLocalLeagueInline,)
+    inlines = (StaffLocalLeagueInline, PartnerLocalLeagueInline, StadiumLocalLeagueInline, TeamLocalLeagueInline,)
+    form = LocalLeagueForm
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'name', 'short_name', 'local_league__name')
+    list_display = ('slug', 'name', 'short_name', 'coach', 'local_league__name', 'logo')
     search_fields = ('slug', 'name', 'short_name', 'local_league__name')
     prepopulated_fields = {'slug': ('name',)}
-    list_editable = ("name", "short_name")
+    list_editable = ("name", "short_name", 'coach')
     list_filter = ('local_league__name',)
     inlines = (PlayerTeamInline,)
 
