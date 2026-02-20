@@ -11,6 +11,7 @@ import stripe
 
 from backend_django.settings import STRIPE_SECRET_KEY
 from backend_django.storage_backends import PrivateMediaStorage
+import matches
 from matches.models import Team
 from django.utils.text import slugify
 
@@ -162,6 +163,18 @@ class PlayerList(models.Model):
     @property
     def total_players(self):
         return self.players.count()
+    
+    def send_players_to_match_app(self):
+        for player in self.players.all():
+            if player.registration_status != 'SUB':
+                continue
+            self.team.players.create(
+                first_name=player.first_name,
+                last_name=player.last_name,
+                shirt_number=player.shirt_number,
+                position=player.position,
+            )
+
 
     def __str__(self):
         return f"PlayerList: {self.name}. Managed by {self.manager.email}"

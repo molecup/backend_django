@@ -78,7 +78,7 @@ class PlayerListAdmin(admin.ModelAdmin):
     readonly_fields = ('registration_token',)
     search_help_text = "Search by team name or manager email."
 
-    actions = ['send_password_set_email', 'submit_player_list', 'export_player_lists_csv']
+    actions = ['send_password_set_email', 'submit_player_list', 'export_player_lists_csv', 'send_players_to_matches_app']
 
     # def total_players(self, obj):
     #     return obj.players.count()
@@ -103,6 +103,11 @@ class PlayerListAdmin(admin.ModelAdmin):
         # Redirect to the export view with pks as query parameter
         export_url = reverse('export-bulk-player-lists') + f'?pks={selected_pks}'
         return redirect(export_url)
+    
+    @admin.action(description='Send players to matches app')
+    def send_players_to_matches_app(self, request, queryset):
+        for player_list in queryset:
+            player_list.send_players_to_match_app()
 
     def export_link(self, obj):
         # return f'/registration/export-player-list/{obj.id}/'
