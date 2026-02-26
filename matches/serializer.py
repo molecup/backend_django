@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import LocalLeague, Match, MatchEvent, Player, Stadium, Team, TeamParticipationMatch
+from .models import LocalLeague, Match, MatchEvent, News, Player, Stadium, Team, TeamParticipationMatch
 
 class ExtraFieldsSerializer(serializers.Serializer):
 
@@ -104,5 +104,23 @@ class MatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Match
-        fields = ['id', 'datetime', 'stadium', 'score_text', 'name', 'finished', 'teams']
+        fields = ['id', 'datetime', 'stadium', 'score_text', 'name', 'finished', 'teams', 'status', 'isLive', 'stage']
         depth=1
+
+class NewsSerializer(serializers.ModelSerializer):
+    local_league = serializers.SlugRelatedField(
+        read_only=False,
+        queryset=LocalLeague.objects.all(),
+        slug_field='slug'
+    )
+
+    tags = serializers.SerializerMethodField()
+
+    def get_tags(self, obj):
+        if not obj.tags:
+            return []
+        return [tag.strip() for tag in obj.tags.split(',')]
+    
+    class Meta:
+        model = News
+        fields = '__all__'

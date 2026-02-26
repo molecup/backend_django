@@ -3,8 +3,8 @@ from html import entities
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status, viewsets
-from .models import LocalLeague, Match, MatchEvent, Stadium, Team, Player
-from .serializer import LocalLeagueSerializer, MatchEventSerializer, MatchSerializer, StadiumSerializer, TeamSerializer, PlayerSerializer
+from .models import LocalLeague, Match, MatchEvent, News, Stadium, Team, Player
+from .serializer import LocalLeagueSerializer, MatchEventSerializer, MatchSerializer, NewsSerializer, StadiumSerializer, TeamSerializer, PlayerSerializer
 
 # # Factories.
 # def handlers_factory(Model, Serializer):
@@ -105,3 +105,15 @@ class MatchViewSet(viewsets.ModelViewSet):
 class MatchEventViewSet(viewsets.ModelViewSet):
     queryset = MatchEvent.objects.all()
     serializer_class = MatchEventSerializer
+
+class NewsViewSet(viewsets.ModelViewSet):
+    queryset = News.objects.all()
+    serializer_class = NewsSerializer
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        local_league_slug = self.request.query_params.get('local-league')
+        if local_league_slug:
+            queryset = queryset.filter(local_league__slug=local_league_slug)
+        return queryset

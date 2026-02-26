@@ -11,5 +11,6 @@ router.register(r'players', PlayerViewSet)
 router.register(r'stadiums', StadiumViewSet)
 router.register(r'matches', MatchViewSet)
 router.register(r'match-events', MatchEventViewSet)
+router.register(r'news', NewsViewSet)
 
 urlpatterns = router.urls

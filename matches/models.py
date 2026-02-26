@@ -45,7 +45,7 @@ class Team(models.Model):
     @property
     def pts(self):
         """Calculates total points from all finished matches."""
-        return sum(p.points for p in self.match_participations.all() if p.match.finished)
+        return sum(p.points for p in self.match_participations.all() if p.match.finished and p.stage == 'Gironi')
 
     @property
     def record(self):
@@ -270,6 +270,36 @@ class Match(models.Model):
     )
     registration_required = models.BooleanField("Is registration available for this match?", default=False)
     registration_link = models.URLField("Registration link", max_length=200, blank=True, null=True)
+
+    STAGES_CHOICES = [
+        ('Ammichevole', 'Friendly'),
+        ('Gironi', 'Group stage'),
+        ('Quarti', 'Quarter-finals'),
+        ('Semi', 'Semi-finals'),
+        ('Finale', 'Final'),
+        ('Finali nazionali', 'National finals'),
+    ]
+    stage = models.CharField(
+        "Tournament stage",
+        max_length=32,
+        choices=STAGES_CHOICES,
+        default='Gironi',
+        help_text="Select the tournament stage for this match"
+    )
+
+    STATUS_CHOICES = [
+        ('SCHEDULED', 'Scheduled'),
+        ('LIVE', 'Live'),
+        ('FT', 'Finished'),
+    ]
+
+    status = models.CharField(
+        "Match status",
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default='SCHEDULED',
+        help_text="Current status of the match"
+    )
     
     SCORE_COMPUTATION_MODES = [
         ('EVENTS', 'Automatic from events'),
@@ -284,7 +314,13 @@ class Match(models.Model):
         help_text="Method to compute the displayed score"
     )
 
-    finished = models.BooleanField("Is the match finished?", default=False)
+    @property
+    def isLive(self):
+        return self.status == 'LIVE'
+    
+    @property
+    def finished(self):
+        return self.status == 'FT'
 
     @property
     def score_text(self):
@@ -348,3 +384,28 @@ class MatchEvent(models.Model):
 
     def __str__(self):
         return f"MatchEvent <{self.id}>: {self.event_type} at minute {self.minute} in match {self.team_match.match.id} for team {self.team_match.team.slug}"
+    
+class News(models.Model):
+    slug = models.SlugField(
+        "Unique slug", 
+        max_length=50, 
+        unique=True,
+        null=False, 
+    )
+    title = models.CharField("News title", max_length=200)
+    subtitle = models.CharField("News subtitle", max_length=300, blank=True)
+    content = models.TextField("News content")
+    date = models.DateField("Publication date")
+    local_league = models.ForeignKey(
+        LocalLeague,
+        on_delete=models.SET_NULL,
+        related_name='news',
+        verbose_name="Local league to which the news belongs",
+        null=True,
+        blank=True,
+    )
+    image = models.ImageField("News image", upload_to='news_images/', storage=PublicMediaStorage, blank=True, null=True)
+    author = models.CharField("Author name", max_length=100, blank=True)
+    tags = models.CharField("Comma-separated tags", max_length=200, blank=True)
+
+

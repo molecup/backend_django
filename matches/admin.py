@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import LocalLeague, Match, MatchEvent, Partner, Stadium, Staff, Team, Player, TeamParticipationMatch
+from .models import LocalLeague, Match, MatchEvent, News, Partner, Stadium, Staff, Team, Player, TeamParticipationMatch
 from nested_admin import NestedStackedInline, NestedModelAdmin, NestedTabularInline
 from django import forms
 
@@ -158,13 +158,13 @@ class StadiumAdmin(admin.ModelAdmin):
 
 @admin.register(Match)
 class MatchAdmin(NestedModelAdmin):
-    list_display = ('name', 'score_text', 'datetime', 'stadium', 'finished')
-    list_editable = ('datetime', 'stadium', 'finished')
+    list_display = ('name', 'score_text', 'datetime', 'stadium', 'status')
+    list_editable = ('datetime', 'stadium', 'status')
     search_fields = ('teams__name', 'stadium__name')
     list_filter = ('teams__local_league__name',)
     fieldsets = (
         ('General Info', {
-            'fields': ('datetime', 'stadium', ('score_computation_mode', 'finished')),
+            'fields': ('datetime', 'stadium', ('score_computation_mode', 'status')),
         }),
         ('Registration', {
             'fields': ('registration_required', 'registration_link'),
@@ -172,3 +172,11 @@ class MatchAdmin(NestedModelAdmin):
         })
     )
     inlines = (TeamParticipationMatchInline,)
+
+@admin.register(News)
+class NewsAdmin(admin.ModelAdmin):
+    list_display = ('id', 'title', 'date', 'local_league')
+    search_fields = ('title', 'content', 'author', 'slug')
+    list_filter = ('local_league__name',)
+    list_editable = ('title', 'date', 'local_league')
+    prepopulated_fields = {'slug': ('title',)}
