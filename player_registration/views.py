@@ -120,7 +120,8 @@ def export_player_list_csv(request, pk):
     if not (player_list.manager == request.user or request.user.has_perm('player_registration.view_playerlist')):
         return Response(status=status.HTTP_403_FORBIDDEN)
 
-    players = player_list.players.all()
+    # Optimization: Prefetch related objects to avoid N+1 queries
+    players = player_list.players.select_related('user').prefetch_related('payment_transactions').all()
     
     response = HttpResponse(
         content_type="text/csv",
@@ -130,9 +131,11 @@ def export_player_list_csv(request, pk):
     writer = csv.writer(response)
     writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position']) 
     for player in players:
+        # Optimization: Check payment status in memory from prefetched data without triggering external API calls
+        is_paid = any(pt.verified_at is not None for pt in player.payment_transactions.all())
         writer.writerow([
             'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
-            'Received' if player.payed else 'Missing',
+            'Received' if is_paid else 'Missing',
             player.first_name,
             player.last_name,
             player.user.email,
@@ -172,7 +175,8 @@ def export_bulk_player_list_csv(request):
     zip_buffer = BytesIO()
     with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
         for player_list in player_lists:
-            players = player_list.players.all()
+            # Optimization: Prefetch related objects to avoid N+1 queries
+            players = player_list.players.select_related('user').prefetch_related('payment_transactions').all()
             
             # Create CSV in memory
             csv_buffer = StringIO()
@@ -180,9 +184,11 @@ def export_bulk_player_list_csv(request):
             writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position'])
             
             for player in players:
+                # Optimization: Check payment status in memory from prefetched data without triggering external API calls
+                is_paid = any(pt.verified_at is not None for pt in player.payment_transactions.all())
                 writer.writerow([
                     'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
-                    'Received' if player.payed else 'Missing',
+                    'Received' if is_paid else 'Missing',
                     player.first_name,
                     player.last_name,
                     player.user.email,
