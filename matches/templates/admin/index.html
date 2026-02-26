@@ -1,0 +1,15 @@
+{% extends "admin/index.html" %}
+
+{% block sidebar %}
+    {{ block.super }}
+    <div class="module">
+        <h2>Custom Management Pages</h2>
+        <ul class="actionlist">
+            <li>
+                <a href="{% url 'custom_match_list' %}" style="display: block; padding: 10px; font-weight: bold;">
+                    &rsaquo; Live Match Manager
+                </a>
+            </li>
+        </ul>
+    </div>
+{% endblock %}

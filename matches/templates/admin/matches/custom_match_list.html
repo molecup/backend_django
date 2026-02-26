@@ -1,0 +1,280 @@
+{% extends "admin/base_site.html" %}
+{% load i18n admin_urls static admin_list %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="{% static "admin/css/changelists.css" %}">
+  <style>
+      :root {
+          --primary-color: #447e9b;
+          --secondary-color: #f8f8f8;
+          --text-color: #333;
+          --border-color: #eee;
+          --highlight-color: #e8f5e9;
+          --bg-color: #fff;
+          --header-bg: #f1f1f1;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --primary-color: #264b5d;
+          --secondary-color: #1e1e1e;
+          --text-color: #f0f0f0;
+          --border-color: #444;
+          --highlight-color: #1b3a1e;
+          --bg-color: #121212;
+          --header-bg: #2c2c2c;
+        }
+      }
+      
+      body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          font-size: 16px;
+          line-height: 1.5;
+          color: var(--text-color);
+          background-color: var(--bg-color);
+      }
+
+      /* Breadcrumbs */
+      .breadcrumbs {
+          padding: 15px;
+          font-size: 14px;
+          background: var(--bg-color);
+          border-bottom: 1px solid var(--border-color);
+          color: var(--text-color);
+      }
+      
+      .breadcrumbs a {
+          color: var(--primary-color);
+      }
+
+      /* Filter Bar */
+      .filter-bar {
+          padding: 20px;
+          background: var(--secondary-color);
+          margin-bottom: 20px;
+          border-radius: 4px;
+          border: 1px solid var(--border-color);
+          box-sizing: border-box;
+          color: var(--text-color);
+      }
+      .filter-bar form {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 15px;
+        align-items: flex-end;
+      }
+      .form-row {
+          display: flex;
+          flex-direction: column;
+      }
+      .form-row label {
+          font-weight: 600;
+          margin-bottom: 5px;
+          font-size: 14px;
+          color: var(--text-color);
+      }
+      select, input[type="date"] {
+          padding: 10px 12px;
+          height: 40px;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          font-size: 14px;
+          min-width: 200px;
+          background-color: var(--bg-color);
+          color: var(--text-color);
+          box-sizing: border-box;
+      }
+
+      /* Buttons */
+      .button, input[type="submit"].button {
+          padding: 8px 16px;
+          background: var(--primary-color);
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          text-decoration: none;
+          display: inline-block;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+      }
+      .button:hover {
+          background-color: #36657c;
+      }
+
+      /* Results Table */
+      .results {
+          overflow-x: auto;
+          background: var(--bg-color);
+          border-radius: 4px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      table {
+          width: 100%;
+          border-collapse: collapse;
+          color: var(--text-color);
+      }
+      th, td {
+          padding: 15px;
+          text-align: left;
+          border-bottom: 1px solid var(--border-color);
+      }
+      th {
+          background: var(--header-bg);
+          font-weight: 600;
+          color: var(--text-color);
+          text-transform: uppercase;
+          font-size: 13px;
+      }
+      
+      /* Highlight Today */
+      tr.highlight-today {
+          background-color: var(--highlight-color);
+      }
+      tr.highlight-today td:first-child {
+          border-left: 5px solid #4caf50;
+      }
+
+      /* Match Status Styles */
+      .status-badge {
+          padding: 4px 8px;
+          border-radius: 12px;
+          font-size: 12px;
+          font-weight: 600;
+      }
+      .status-live { background: #ffebee; color: #c62828; }
+      .status-scheduled { background: #e3f2fd; color: #1565c0; }
+      .status-finished { background: #f5f5f5; color: #616161; }
+      
+      @media (prefers-color-scheme: dark) {
+          .status-live { background: #5c0000; color: #ff8a80; }
+          .status-scheduled { background: #0d47a1; color: #82b1ff; }
+          .status-finished { background: #424242; color: #e0e0e0; }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+          .filter-bar form {
+              flex-direction: column;
+              align-items: stretch;
+          }
+          select, input[type="date"] {
+              width: 100%;
+          }
+          /* Custom table responsiveness for mobile */
+          .results table, .results thead, .results tbody, .results th, .results td, .results tr {
+              display: block;
+          }
+          .results thead tr {
+              position: absolute;
+              top: -9999px;
+              left: -9999px;
+          }
+          .results tr {
+              border: 1px solid var(--border-color);
+              margin-bottom: 15px;
+              border-radius: 8px;
+              box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+              background: var(--bg-color);
+          }
+          .results td {
+              border: none;
+              border-bottom: 1px solid var(--border-color);
+              position: relative;
+              padding-left: 50%;
+              white-space: normal;
+              text-align: right;
+          }
+          .results td:before {
+              position: absolute;
+              top: 15px;
+              left: 15px;
+              width: 45%; 
+              padding-right: 10px; 
+              white-space: nowrap;
+              text-align: left;
+              font-weight: bold;
+              content: attr(data-label);
+          }
+          tr.highlight-today td:first-child {
+               border-left: none;
+               border-top: 5px solid #4caf50;
+          }
+      }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+<a href="{% url "admin:index" %}">{% translate "Home" %}</a>
+&rsaquo; Match Management
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main" style="max-width: 1200px; margin: 0 auto; padding: 20px;">
+    
+    <div class="filter-bar">
+        <h3>Filter Matches</h3>
+        <form method="get">
+            {% for field in form %}
+            <div class="form-row">
+                {{ field.label_tag }} {{ field }}
+            </div>
+            {% endfor %}
+            <div style="margin-top: auto; display: flex; gap: 10px;">
+                <input type="submit" value="Filter" class="button">
+                <a href="{% url "custom_match_list" %}" class="button" style="background:#999">Clear</a>
+            </div>
+        </form>
+    </div>
+
+    <div class="module" id="changelist">
+        <div class="results">
+            <table id="result_list">
+                <thead>
+                    <tr>
+                        <th scope="col">Date & Time</th>
+                        <th scope="col">Match</th>
+                        <th scope="col">Score</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Local League</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for match in matches %}
+                    <tr class="{% if match.datetime.date == today %}highlight-today{% endif %}">
+                        <td data-label="Date & Time">{{ match.datetime|date:"d M Y H:i" }}</td>
+                        <td data-label="Match">
+                            <span style="font-weight:600; font-size: 1.1em;">{{ match.name }}</span>
+                        </td>
+                        <td data-label="Score" style="font-weight: bold;">{{ match.score_text }}</td>
+                        <td data-label="Status">
+                            <span class="status-badge status-{{ match.status|lower }}">
+                                {{ match.get_status_display }}
+                            </span>
+                        </td>
+                        <td data-label="League">
+                            {% for team in match.teams.all %}
+                                {{ team.local_league.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </td>
+                        <td data-label="Actions">
+                            <a href="{% url "custom_match_edit" match.id %}" class="button">Manage</a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px;">No matches found matching criteria.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
