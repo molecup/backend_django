@@ -78,7 +78,10 @@ def match_edit_view(request, match_id):
             tp_id = request.POST.get('team_participation_id')
             tp = get_object_or_404(TeamParticipationMatch, id=tp_id, match=match)
             
-            form = MatchEventForm(tp, request.POST)
+            # Reconstruct the prefix used in the GET view
+            prefix = f'team_{tp.id}'
+            form = MatchEventForm(tp, request.POST, prefix=prefix)
+            
             if form.is_valid():
                 form.save()
                 return redirect('custom_match_edit', match_id=match.id)
