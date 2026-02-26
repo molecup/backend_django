@@ -65,12 +65,16 @@ def match_edit_view(request, match_id):
 
     # Calculate elapsed minutes if live
     elapsed_minutes = 0
+    form_initial_minute = 0
     if match.status == 'LIVE' and match.datetime:
         now = timezone.localtime(timezone.now())
         start = timezone.localtime(match.datetime)
         delta = now - start
         elapsed_minutes = int(delta.total_seconds() / 60)
         if elapsed_minutes < 0: elapsed_minutes = 0
+        
+        # Cap the initial form value at 90 to prevent accidental high values
+        form_initial_minute = elapsed_minutes if elapsed_minutes <= 90 else 90
 
     if request.method == 'POST':
         # Handle Event Creation
@@ -107,7 +111,7 @@ def match_edit_view(request, match_id):
     
     # Create a form for each team participation
     team_forms = []
-    initial_data = {'minute': elapsed_minutes if elapsed_minutes > 0 else 0}
+    initial_data = {'minute': form_initial_minute if form_initial_minute > 0 else 0}
     
     for tp in participations:
         form = MatchEventForm(tp, initial=initial_data, prefix=f'team_{tp.id}')

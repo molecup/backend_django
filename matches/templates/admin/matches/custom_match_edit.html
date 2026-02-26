@@ -291,7 +291,12 @@
                 <div style="display: flex; gap: 10px;">
                     <div class="event-form-row" style="flex: 1;">
                         <label>Minute</label>
-                        {{ item.form.minute }}
+                        <div style="display: flex;">
+                            {{ item.form.minute }}
+                            <button type="button" class="btn-refresh-time" style="margin-left: 5px; border: 1px solid var(--border-color); background: var(--secondary-color); color: var(--text-color); border-radius: 4px; cursor: pointer; height: 40px; width: 40px; display: flex; align-items: center; justify-content: center;" title="Sync to current time">
+                                ↻
+                            </button>
+                        </div>
                     </div>
                     <div class="event-form-row" style="flex: 3;">
                         <label>Event Type</label>
@@ -355,6 +360,46 @@
         </div>
     </div>
 
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse match start time from ISO string provided by Django
+        // Using 'c' format filter ensures ISO 8601 format
+        const matchStartStr = "{{ match.datetime|date:'c' }}";
+        const matchStart = new Date(matchStartStr).getTime();
+        const isLive = "{{ match.status }}" === "LIVE";
+
+        function getCurrentMinute() {
+            if (!isLive) return 0;
+            const now = new Date().getTime();
+            // Calculate difference in milliseconds, convert to minutes
+            const diff = Math.floor((now - matchStart) / 60000);
+            return diff > 0 ? diff : 0;
+        }
+
+        document.querySelectorAll('.btn-refresh-time').forEach(button => {
+            button.addEventListener('click', function() {
+                if (!isLive) {
+                    alert('Match is not LIVE, cannot sync time automatically.');
+                    return;
+                }
+                
+                const minuteInput = this.previousElementSibling;
+                if (minuteInput) {
+                    const currentMinute = getCurrentMinute();
+                    
+                    if (currentMinute > 90) {
+                        if (!confirm(`The calculated time is ${currentMinute} minutes, which is over 90. Do you want to update it anyway?`)) {
+                            return;
+                        }
+                    }
+                    
+                    minuteInput.value = currentMinute;
+                }
+            });
+        });
+    });
+</script>
     <div class="submit-row" style="margin-top: 30px; text-align: center;">
         <a href="{% url "custom_match_list" %}" class="button" style="background:#666; padding: 10px 20px;">&laquo; Back to Match List</a>
     </div>
