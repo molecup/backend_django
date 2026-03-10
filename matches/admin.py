@@ -131,7 +131,7 @@ class LocalLeagueAdmin(admin.ModelAdmin):
 
 @admin.register(Team)
 class TeamAdmin(admin.ModelAdmin):
-    list_display = ('slug', 'name', 'short_name', 'coach', 'local_league__name', 'logo')
+    list_display = ('slug', 'name', 'short_name', 'coach', 'local_league__name', 'logo', "pts")
     search_fields = ('slug', 'name', 'short_name', 'local_league__name')
     prepopulated_fields = {'slug': ('name',)}
     list_editable = ("name", "short_name", 'coach')
@@ -158,13 +158,13 @@ class StadiumAdmin(admin.ModelAdmin):
 
 @admin.register(Match)
 class MatchAdmin(NestedModelAdmin):
-    list_display = ('name', 'score_text', 'datetime', 'stadium', 'status')
-    list_editable = ('datetime', 'stadium', 'status')
+    list_display = ('name', 'score_text', 'datetime', 'stadium', 'status', 'stage')
+    list_editable = ('datetime', 'stadium', 'status', 'stage')
     search_fields = ('teams__name', 'stadium__name')
     list_filter = ('teams__local_league__name',)
     fieldsets = (
         ('General Info', {
-            'fields': ('datetime', 'stadium', ('score_computation_mode', 'status')),
+            'fields': ('datetime', 'stadium', 'stage', ('score_computation_mode', 'status')),
         }),
         ('Registration', {
             'fields': ('registration_required', 'registration_link'),

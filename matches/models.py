@@ -45,7 +45,7 @@ class Team(models.Model):
     @property
     def pts(self):
         """Calculates total points from all finished matches."""
-        return sum(p.points for p in self.match_participations.all() if p.match.finished and p.stage == 'Gironi')
+        return sum(p.points for p in self.match_participations.all() if p.match.finished and p.match.stage == 'Gironi')
 
     @property
     def record(self):
@@ -164,7 +164,10 @@ class TeamParticipationMatch(models.Model):
         match = self.match
         if match.score_computation_mode == 'OFFSET':
             return self.score_offset
-        event_goals = self.events.filter(event_type='GOAL').count()
+        if hasattr(self, '_prefetched_objects_cache') and 'events' in self._prefetched_objects_cache:
+            event_goals = sum(1 for e in self.events.all() if e.event_type == 'GOAL')
+        else:
+            event_goals = self.events.filter(event_type='GOAL').count()
         if match.score_computation_mode == 'EVENTS':
             return event_goals
         if match.score_computation_mode == 'SUM':

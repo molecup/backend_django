@@ -3,8 +3,9 @@ from html import entities
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status, viewsets
-from .models import LocalLeague, Match, MatchEvent, News, Stadium, Team, Player
+from .models import LocalLeague, Match, MatchEvent, News, Stadium, Team, Player, TeamParticipationMatch
 from .serializer import LocalLeagueSerializer, MatchEventSerializer, MatchSerializer, NewsSerializer, StadiumSerializer, TeamSerializer, PlayerSerializer
+from django.db.models import Prefetch 
 
 # # Factories.
 # def handlers_factory(Model, Serializer):
@@ -71,7 +72,16 @@ from .serializer import LocalLeagueSerializer, MatchEventSerializer, MatchSerial
 # player_handlers = handlers_factory(Player, PlayerSerializer)
 
 class LocalLeagueViewSet(viewsets.ModelViewSet):
-    queryset = LocalLeague.objects.all()
+    queryset = LocalLeague.objects.prefetch_related(
+        "teams",
+        "teams__match_participations",
+        "teams__match_participations__match",
+        "teams__match_participations__events",
+        Prefetch(
+            'teams__match_participations__match__participations',
+            queryset=TeamParticipationMatch.objects.prefetch_related('events')
+        )
+    ).all()
     serializer_class = LocalLeagueSerializer
     lookup_field = 'slug'
 
