@@ -2,6 +2,7 @@ from functools import cached_property
 from django.db import models
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.contrib import admin
+from .custom_fields import SVGAndImageField
 
 from backend_django.storage_backends import PublicMediaStorage
 # from location_field.models.plain import PlainLocationField
@@ -81,7 +82,7 @@ class Staff(models.Model):
 
 class Partner(models.Model):
     name = models.CharField("Partner name", max_length=100)
-    logo = models.ImageField("Partner logo", upload_to='partner_logos/', storage=PublicMediaStorage)
+    logo = SVGAndImageField("Partner logo", upload_to='partner_logos/', storage=PublicMediaStorage)
     url = models.URLField("Partner website", max_length=200, blank=True)
     local_league = models.ForeignKey(
         LocalLeague,
