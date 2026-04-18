@@ -22,6 +22,7 @@ class MedicalCertificatePlayerListFilterForm(forms.Form):
     )
 
 
+@staff_member_required
 @permission_required('player_registration.view_medicalcertificate', raise_exception=True)
 def medical_certificate_player_lists_view(request):
     today = timezone.localdate()
@@ -63,6 +64,7 @@ def medical_certificate_player_lists_view(request):
     )
 
 
+@staff_member_required
 @permission_required('player_registration.view_medicalcertificate', raise_exception=True)
 def medical_certificate_player_list_players_view(request, player_list_id):
     player_list = get_object_or_404(
