@@ -90,6 +90,21 @@
       background: var(--primary-hover);
     }
 
+    .button-danger {
+      background: #c93636;
+      min-height: 32px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 0;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .button-danger:hover {
+      background: #a72828;
+    }
+
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -227,6 +242,7 @@
             <th>Certificate</th>
             <th>Expiry Date</th>
             <th>File</th>
+            <th>Action</th>
           </tr>
         </thead>
         <tbody>
@@ -273,10 +289,22 @@
                   -
                 {% endif %}
               </td>
+              <td data-label="Action">
+                {% if player.medical_certificate %}
+                  <form method="post" onsubmit="return confirm('Delete this medical certificate?');" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_certificate">
+                    <input type="hidden" name="player_id" value="{{ player.id }}">
+                    <button type="submit" class="button-danger">Delete Certificate</button>
+                  </form>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
             </tr>
           {% empty %}
             <tr>
-              <td colspan="11" style="text-align: center;">No players found in this player list.</td>
+              <td colspan="12" style="text-align: center;">No players found in this player list.</td>
             </tr>
           {% endfor %}
         </tbody>

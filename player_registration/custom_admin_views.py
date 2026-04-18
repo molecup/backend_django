@@ -1,7 +1,9 @@
 from django import forms
+from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from matches.models import LocalLeague
 from player_registration.models import PlayerList
@@ -49,6 +51,27 @@ def medical_certificate_player_list_players_view(request, player_list_id):
         PlayerList.objects.select_related("team__local_league", "manager"),
         pk=player_list_id,
     )
+
+    if request.method == "POST" and request.POST.get("action") == "delete_certificate":
+        player_id = request.POST.get("player_id")
+        player = get_object_or_404(player_list.players.select_related("medical_certificate"), pk=player_id)
+
+        if hasattr(player, "medical_certificate"):
+            player.medical_certificate.delete()
+            messages.success(
+                request,
+                f"Medical certificate deleted for {player.first_name or ''} {player.last_name or ''}".strip(),
+            )
+        else:
+            messages.warning(request, "The selected player has no medical certificate to delete.")
+
+        return redirect(
+            reverse(
+                "medical-certificate-player-list-players",
+                kwargs={"player_list_id": player_list.id},
+            )
+        )
+
     players = player_list.players.select_related("user", "medical_certificate").order_by(
         "last_name", "first_name"
     )
