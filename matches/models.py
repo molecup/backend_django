@@ -278,6 +278,7 @@ class Match(models.Model):
     STAGES_CHOICES = [
         ('Ammichevole', 'Friendly'),
         ('Gironi', 'Group stage'),
+        ('Ottavi', 'round-of-16'),
         ('Quarti', 'Quarter-finals'),
         ('Semi', 'Semi-finals'),
         ('Finale', 'Final'),
