@@ -282,7 +282,9 @@
             <th>Verified</th>
             <th>Expiry Date</th>
             <th>File</th>
+            {% if perms.player_registration.change_medicalcertificate %}
             <th>Action</th>
+            {% endif %}
           </tr>
         </thead>
         <tbody>
@@ -336,6 +338,7 @@
                   -
                 {% endif %}
               </td>
+              {% if perms.player_registration.change_medicalcertificate %}
               <td data-label="Action">
                 <form method="post" enctype="multipart/form-data" class="action-form">
                   {% csrf_token %}
@@ -368,10 +371,11 @@
                 </form>
                 {% endif %}
               </td>
+              {% endif %}
             </tr>
           {% empty %}
             <tr>
-              <td colspan="12" style="text-align: center;">No players found in this player list.</td>
+              <td colspan="{% if perms.player_registration.change_medicalcertificate %}13{% else %}12{% endif %}" style="text-align: center;">No players found in this player list.</td>
             </tr>
           {% endfor %}
         </tbody>
