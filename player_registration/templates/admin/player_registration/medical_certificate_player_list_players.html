@@ -262,7 +262,7 @@
   </div>
 
   <div class="actions">
-    <a href="{% url 'medical-certificate-player-lists' %}" class="button">Back To Player Lists</a>
+    <a href="{% url 'medical-certificate-player-lists' %}{% if request.GET.local_league %}?local_league={{ request.GET.local_league }}{% endif %}" class="button">Back To Player Lists</a>
   </div>
 
   <div class="table-wrap">

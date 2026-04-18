@@ -254,7 +254,7 @@
         </thead>
         <tbody>
           {% for player_list in player_lists %}
-            <tr class="clickable-row" data-href="{% url 'medical-certificate-player-list-players' player_list.id %}">
+            <tr class="clickable-row" data-href="{% url 'medical-certificate-player-list-players' player_list.id %}{% if player_list.team and player_list.team.local_league %}?local_league={{ player_list.team.local_league.id }}{% endif %}">
               <td data-label="Player List">
                 <strong>{{ player_list.name }}</strong>
               </td>
