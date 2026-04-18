@@ -1,6 +1,10 @@
 from django.urls import include, path
 from rest_framework import routers
 from knox import views as knox_views
+from .custom_admin_views import (
+    medical_certificate_player_list_players_view,
+    medical_certificate_player_lists_view,
+)
 
 
 # from .views import *
@@ -23,6 +27,16 @@ router.register(r'change-player-mail', ChangePlayerMailViewSet, basename='change
 
 urlpatterns = [
     path('', include(router.urls)),
+    path(
+        'management/medical-certificates/',
+        medical_certificate_player_lists_view,
+        name='medical-certificate-player-lists',
+    ),
+    path(
+        'management/medical-certificates/<int:player_list_id>/',
+        medical_certificate_player_list_players_view,
+        name='medical-certificate-player-list-players',
+    ),
     # path('register-player/', PlayerRegistration.as_view(), name='player-registration'),
     path('login/', LoginView.as_view(), name='knox_login'),
     path(r'logout/', knox_views.LogoutView.as_view(), name='knox_logout'),

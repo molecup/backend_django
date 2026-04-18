@@ -1,0 +1,287 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --primary-color: #447e9b;
+      --primary-hover: #36657c;
+      --surface: #ffffff;
+      --surface-alt: #f6f8fa;
+      --text: #1f2933;
+      --muted: #5a6570;
+      --border: #d9dee3;
+      --ok-bg: #e8f7ea;
+      --ok-text: #1a7f37;
+      --missing-bg: #fdecec;
+      --missing-text: #b42318;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --primary-color: #5fa6c8;
+        --primary-hover: #84bdd7;
+        --surface: #1c1f23;
+        --surface-alt: #24282d;
+        --text: #e8edf2;
+        --muted: #a8b0ba;
+        --border: #3a4148;
+        --ok-bg: #123820;
+        --ok-text: #8ce0a8;
+        --missing-bg: #4b1e1f;
+        --missing-text: #f6a8a9;
+      }
+    }
+
+    #content-main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 20px;
+      color: var(--text);
+    }
+
+    .breadcrumbs {
+      padding: 15px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+
+    .summary {
+      margin-bottom: 18px;
+      background: var(--surface-alt);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .summary-row {
+      color: var(--muted);
+    }
+
+    .summary-row strong {
+      color: var(--text);
+    }
+
+    .actions {
+      margin: 14px 0 18px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .button {
+      min-height: 38px;
+      padding: 8px 14px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--primary-color);
+      color: #fff;
+      text-decoration: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .button:hover {
+      background: var(--primary-hover);
+    }
+
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .results {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 12px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      background: var(--surface-alt);
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody td {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .badge {
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      display: inline-block;
+    }
+
+    .badge-ok {
+      background: var(--ok-bg);
+      color: var(--ok-text);
+    }
+
+    .badge-missing {
+      background: var(--missing-bg);
+      color: var(--missing-text);
+    }
+
+    @media (max-width: 1024px) {
+      .results table,
+      .results thead,
+      .results tbody,
+      .results th,
+      .results td,
+      .results tr {
+        display: block;
+      }
+
+      .results thead tr {
+        position: absolute;
+        top: -9999px;
+        left: -9999px;
+      }
+
+      .results tr {
+        border-bottom: 1px solid var(--border);
+      }
+
+      .results td {
+        padding-left: 46%;
+        position: relative;
+        min-height: 48px;
+      }
+
+      .results td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 12px;
+        top: 12px;
+        width: 42%;
+        font-weight: 600;
+        color: var(--muted);
+      }
+    }
+  </style>
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">{% translate "Home" %}</a>
+  &rsaquo; <a href="{% url 'medical-certificate-player-lists' %}">Medical Certificate Verification</a>
+  &rsaquo; {{ player_list.name }}
+</div>
+{% endblock %}
+
+{% block content %}
+<div id="content-main">
+  <div class="summary">
+    <div><strong>Player List:</strong> {{ player_list.name }}</div>
+    <div class="summary-row"><strong>Manager:</strong> {{ player_list.manager.email }}</div>
+    <div class="summary-row">
+      <strong>Local League:</strong>
+      {% if player_list.team and player_list.team.local_league %}
+        {{ player_list.team.local_league.name }}
+      {% else %}
+        -
+      {% endif %}
+    </div>
+    <div class="summary-row"><strong>Team:</strong> {% if player_list.team %}{{ player_list.team.name }}{% else %}-{% endif %}</div>
+  </div>
+
+  <div class="actions">
+    <a href="{% url 'medical-certificate-player-lists' %}" class="button">Back To Player Lists</a>
+  </div>
+
+  <div class="table-wrap">
+    <div class="results">
+      <table>
+        <thead>
+          <tr>
+            <th>First Name</th>
+            <th>Last Name</th>
+            <th>Email</th>
+            <th>Fiscal Code</th>
+            <th>Date Of Birth</th>
+            <th>Place Of Birth</th>
+            <th>Shirt Number</th>
+            <th>Position</th>
+            <th>Certificate</th>
+            <th>Expiry Date</th>
+            <th>File</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for player in players %}
+            <tr>
+              <td data-label="First Name">{{ player.first_name|default:"-" }}</td>
+              <td data-label="Last Name">{{ player.last_name|default:"-" }}</td>
+              <td data-label="Email">{{ player.user.email }}</td>
+              <td data-label="Fiscal Code">{{ player.code_fiscal|default:"-" }}</td>
+              <td data-label="Date Of Birth">
+                {% if player.date_of_birth %}
+                  {{ player.date_of_birth|date:"Y-m-d" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td data-label="Place Of Birth">{{ player.place_of_birth|default:"-" }}</td>
+              <td data-label="Shirt Number">{{ player.shirt_number|default:"-" }}</td>
+              <td data-label="Position">
+                {% if player.position %}
+                  {{ player.get_position_display }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td data-label="Certificate">
+                {% if player.medical_certificate %}
+                  <span class="badge badge-ok">Uploaded</span>
+                {% else %}
+                  <span class="badge badge-missing">Missing</span>
+                {% endif %}
+              </td>
+              <td data-label="Expiry Date">
+                {% if player.medical_certificate and player.medical_certificate.expires_at %}
+                  {{ player.medical_certificate.expires_at|date:"Y-m-d" }}
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+              <td data-label="File">
+                {% if player.medical_certificate and player.medical_certificate.file %}
+                  <a href="{{ player.medical_certificate.file.url }}" target="_blank" rel="noopener">Open File</a>
+                {% else %}
+                  -
+                {% endif %}
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="11" style="text-align: center;">No players found in this player list.</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
