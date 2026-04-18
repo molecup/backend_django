@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.decorators import permission_required
 from django.core.exceptions import PermissionDenied
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -24,15 +24,23 @@ class MedicalCertificatePlayerListFilterForm(forms.Form):
 
 @permission_required('player_registration.view_medicalcertificate', raise_exception=True)
 def medical_certificate_player_lists_view(request):
-    from django.db.models import Q
+    today = timezone.localdate()
+    valid_certificate_filter = Q(players__medical_certificate__expires_at__gte=today) | Q(
+        players__medical_certificate__expires_at__isnull=True
+    )
+
     player_lists = (
         PlayerList.objects.select_related("manager", "team__local_league")
         .annotate(
             total_players_count=Count("players", distinct=True),
-            uploaded_certificates_count=Count("players__medical_certificate", distinct=True),
+            uploaded_certificates_count=Count(
+                "players__medical_certificate",
+                filter=valid_certificate_filter,
+                distinct=True,
+            ),
             verified_certificates_count=Count(
                 "players__medical_certificate",
-                filter=Q(players__medical_certificate__is_verified=True),
+                filter=Q(players__medical_certificate__is_verified=True) & valid_certificate_filter,
                 distinct=True,
             ),
         )
@@ -158,6 +166,7 @@ def medical_certificate_player_list_players_view(request, player_list_id):
         "title": f"Medical Certificates - {player_list.name}",
         "player_list": player_list,
         "players": players,
+        "today": timezone.localdate(),
     }
     return render(
         request,

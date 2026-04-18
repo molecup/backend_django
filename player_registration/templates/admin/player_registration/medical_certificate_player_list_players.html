@@ -191,10 +191,20 @@
       color: #155724;
     }
 
+    .badge-expired {
+      background: #fdecec;
+      color: #b42318;
+    }
+
     @media (prefers-color-scheme: dark) {
       .badge-verified {
         background: #0f4c2a;
         color: #6ee7b7;
+      }
+
+      .badge-expired {
+        background: #4b1e1f;
+        color: #f6a8a9;
       }
     }
 
@@ -312,7 +322,11 @@
               </td>
               <td data-label="Certificate">
                 {% if player.medical_certificate %}
-                  <span class="badge badge-ok">Uploaded</span>
+                  {% if player.medical_certificate.expires_at and player.medical_certificate.expires_at < today %}
+                    <span class="badge badge-expired">Expired</span>
+                  {% else %}
+                    <span class="badge badge-ok">Uploaded</span>
+                  {% endif %}
                 {% else %}
                   <span class="badge badge-missing">Missing</span>
                 {% endif %}
@@ -326,7 +340,11 @@
               </td>
               <td data-label="Expiry Date">
                 {% if player.medical_certificate and player.medical_certificate.expires_at %}
-                  {{ player.medical_certificate.expires_at|date:"Y-m-d" }}
+                  {% if player.medical_certificate.expires_at < today %}
+                    <span class="badge badge-expired">{{ player.medical_certificate.expires_at|date:"Y-m-d" }}</span>
+                  {% else %}
+                    {{ player.medical_certificate.expires_at|date:"Y-m-d" }}
+                  {% endif %}
                 {% else %}
                   -
                 {% endif %}
