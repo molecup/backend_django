@@ -334,6 +334,10 @@ class Match(models.Model):
             return "N/A"
         home_team = participations.get(is_home=True)
         away_team = participations.get(is_home=False)
+        if home_team.score is None or away_team.score is None:
+            return "N/A"
+        if home_team.score == away_team.score and (home_team.penalties > 0 or away_team.penalties > 0):
+            return f"{home_team.score + home_team.penalties}(R) - {away_team.score + away_team.penalties}(R) "
         return f"{home_team.score} - {away_team.score}"
     
     @property
