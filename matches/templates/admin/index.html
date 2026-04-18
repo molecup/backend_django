@@ -12,6 +12,7 @@
             </li>
         </ul>
     </div>
+    {% if perms.player_registration.view_medicalcertificate or perms.player_registration.change_medicalcertificate %}
     <div class="module">
         <h2>Player Registration Management</h2>
         <p style="margin: 8px 10px 12px; color: #666; font-size: 13px; line-height: 1.4;">
@@ -25,4 +26,5 @@
             </li>
         </ul>
     </div>
+    {% endif %}
 {% endblock %}
