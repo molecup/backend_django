@@ -1,6 +1,8 @@
 from django import forms
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import permission_required
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -20,7 +22,7 @@ class MedicalCertificatePlayerListFilterForm(forms.Form):
     )
 
 
-@staff_member_required
+@permission_required('player_registration.view_medicalcertificate', raise_exception=True)
 def medical_certificate_player_lists_view(request):
     from django.db.models import Q
     player_lists = (
@@ -53,7 +55,7 @@ def medical_certificate_player_lists_view(request):
     )
 
 
-@staff_member_required
+@permission_required('player_registration.view_medicalcertificate', raise_exception=True)
 def medical_certificate_player_list_players_view(request, player_list_id):
     player_list = get_object_or_404(
         PlayerList.objects.select_related("team__local_league", "manager"),
@@ -61,6 +63,9 @@ def medical_certificate_player_list_players_view(request, player_list_id):
     )
 
     if request.method == "POST":
+        if not request.user.has_perm('player_registration.change_medicalcertificate'):
+            raise PermissionDenied("You do not have permission to modify medical certificates.")
+        
         action = request.POST.get("action")
         player_id = request.POST.get("player_id")
         player = get_object_or_404(player_list.players.select_related("medical_certificate"), pk=player_id)
