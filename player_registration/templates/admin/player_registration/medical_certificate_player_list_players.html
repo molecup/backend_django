@@ -105,6 +105,33 @@
       background: #a72828;
     }
 
+    .button-upload {
+      background: var(--primary-color);
+      min-height: 32px;
+      padding: 6px 10px;
+      font-size: 12px;
+      border: 0;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .button-upload:hover {
+      background: var(--primary-hover);
+    }
+
+    .action-form {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .action-form input[type="date"],
+    .action-form input[type="file"] {
+      font-size: 12px;
+      max-width: 220px;
+    }
+
     .table-wrap {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -290,15 +317,24 @@
                 {% endif %}
               </td>
               <td data-label="Action">
+                <form method="post" enctype="multipart/form-data" class="action-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="upload_certificate">
+                  <input type="hidden" name="player_id" value="{{ player.id }}">
+                  <input type="file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
+                  <input type="date" name="expires_at" value="{% if player.medical_certificate and player.medical_certificate.expires_at %}{{ player.medical_certificate.expires_at|date:'Y-m-d' }}{% endif %}">
+                  <button type="submit" class="button-upload">
+                    {% if player.medical_certificate %}Replace Certificate{% else %}Upload Certificate{% endif %}
+                  </button>
+                </form>
+
                 {% if player.medical_certificate %}
-                  <form method="post" onsubmit="return confirm('Delete this medical certificate?');" style="margin: 0;">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="delete_certificate">
-                    <input type="hidden" name="player_id" value="{{ player.id }}">
-                    <button type="submit" class="button-danger">Delete Certificate</button>
-                  </form>
-                {% else %}
-                  -
+                <form method="post" onsubmit="return confirm('Delete this medical certificate?');" style="margin: 0;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_certificate">
+                  <input type="hidden" name="player_id" value="{{ player.id }}">
+                  <button type="submit" class="button-danger">Delete Certificate</button>
+                </form>
                 {% endif %}
               </td>
             </tr>

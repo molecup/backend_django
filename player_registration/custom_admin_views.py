@@ -4,9 +4,11 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from matches.models import LocalLeague
-from player_registration.models import PlayerList
+from player_registration.models import MedicalCertificate, PlayerList
 
 
 class MedicalCertificatePlayerListFilterForm(forms.Form):
@@ -52,25 +54,72 @@ def medical_certificate_player_list_players_view(request, player_list_id):
         pk=player_list_id,
     )
 
-    if request.method == "POST" and request.POST.get("action") == "delete_certificate":
+    if request.method == "POST":
+        action = request.POST.get("action")
         player_id = request.POST.get("player_id")
         player = get_object_or_404(player_list.players.select_related("medical_certificate"), pk=player_id)
 
-        if hasattr(player, "medical_certificate"):
-            player.medical_certificate.delete()
+        if action == "delete_certificate":
+            if hasattr(player, "medical_certificate"):
+                player.medical_certificate.delete()
+                messages.success(
+                    request,
+                    f"Medical certificate deleted for {player.first_name or ''} {player.last_name or ''}".strip(),
+                )
+            else:
+                messages.warning(request, "The selected player has no medical certificate to delete.")
+
+            return redirect(
+                reverse(
+                    "medical-certificate-player-list-players",
+                    kwargs={"player_list_id": player_list.id},
+                )
+            )
+
+        if action == "upload_certificate":
+            certificate_file = request.FILES.get("certificate_file")
+            expires_at_input = request.POST.get("expires_at", "").strip()
+
+            if not certificate_file:
+                messages.error(request, "Please choose a certificate file before uploading.")
+                return redirect(
+                    reverse(
+                        "medical-certificate-player-list-players",
+                        kwargs={"player_list_id": player_list.id},
+                    )
+                )
+
+            expires_at = None
+            if expires_at_input:
+                expires_at = parse_date(expires_at_input)
+                if expires_at is None:
+                    messages.error(request, "Invalid expiry date format.")
+                    return redirect(
+                        reverse(
+                            "medical-certificate-player-list-players",
+                            kwargs={"player_list_id": player_list.id},
+                        )
+                    )
+
+            if hasattr(player, "medical_certificate"):
+                player.medical_certificate.delete()
+
+            MedicalCertificate.objects.create(
+                player=player,
+                file=certificate_file,
+                expires_at=expires_at,
+                submitted_at=timezone.now(),
+            )
             messages.success(
                 request,
-                f"Medical certificate deleted for {player.first_name or ''} {player.last_name or ''}".strip(),
+                f"Medical certificate uploaded for {player.first_name or ''} {player.last_name or ''}".strip(),
             )
-        else:
-            messages.warning(request, "The selected player has no medical certificate to delete.")
-
-        return redirect(
-            reverse(
-                "medical-certificate-player-list-players",
-                kwargs={"player_list_id": player_list.id},
+            return redirect(
+                reverse(
+                    "medical-certificate-player-list-players",
+                    kwargs={"player_list_id": player_list.id},
+                )
             )
-        )
 
     players = player_list.players.select_related("user", "medical_certificate").order_by(
         "last_name", "first_name"
