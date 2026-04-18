@@ -248,6 +248,7 @@
             <th>Manager</th>
             <th>Total Players</th>
             <th>Uploaded Certificates</th>
+            <th>Verified Certificates</th>
             <th>Coverage</th>
           </tr>
         </thead>
@@ -267,6 +268,7 @@
               <td data-label="Manager">{{ player_list.manager.email }}</td>
               <td data-label="Total Players">{{ player_list.total_players_count }}</td>
               <td data-label="Uploaded Certificates">{{ player_list.uploaded_certificates_count }}</td>
+              <td data-label="Verified Certificates">{{ player_list.verified_certificates_count }}</td>
               <td data-label="Coverage">
                 {% if player_list.total_players_count > 0 and player_list.uploaded_certificates_count == player_list.total_players_count %}
                   <span class="badge badge-success">Complete</span>
@@ -277,7 +279,7 @@
             </tr>
           {% empty %}
             <tr>
-              <td colspan="6" style="text-align: center;">No player lists found.</td>
+              <td colspan="7" style="text-align: center;">No player lists found.</td>
             </tr>
           {% endfor %}
         </tbody>

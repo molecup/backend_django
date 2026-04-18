@@ -22,11 +22,17 @@ class MedicalCertificatePlayerListFilterForm(forms.Form):
 
 @staff_member_required
 def medical_certificate_player_lists_view(request):
+    from django.db.models import Q
     player_lists = (
         PlayerList.objects.select_related("manager", "team__local_league")
         .annotate(
             total_players_count=Count("players", distinct=True),
             uploaded_certificates_count=Count("players__medical_certificate", distinct=True),
+            verified_certificates_count=Count(
+                "players__medical_certificate",
+                filter=Q(players__medical_certificate__is_verified=True),
+                distinct=True,
+            ),
         )
         .order_by("team__local_league__name", "name")
     )
@@ -114,6 +120,24 @@ def medical_certificate_player_list_players_view(request, player_list_id):
                 request,
                 f"Medical certificate uploaded for {player.first_name or ''} {player.last_name or ''}".strip(),
             )
+            return redirect(
+                reverse(
+                    "medical-certificate-player-list-players",
+                    kwargs={"player_list_id": player_list.id},
+                )
+            )
+
+        if action == "verify_certificate":
+            if hasattr(player, "medical_certificate"):
+                player.medical_certificate.is_verified = True
+                player.medical_certificate.save()
+                messages.success(
+                    request,
+                    f"Medical certificate verified for {player.first_name or ''} {player.last_name or ''}".strip(),
+                )
+            else:
+                messages.warning(request, "The selected player has no medical certificate to verify.")
+
             return redirect(
                 reverse(
                     "medical-certificate-player-list-players",

@@ -316,6 +316,7 @@ class MedicalCertificate(models.Model):
     uploaded_at = models.DateTimeField("Uploaded at", auto_now_add=True)
     expires_at = models.DateField("Expires at", null=True)
     submitted_at = models.DateTimeField("Submitted at", null=True, blank=True)
+    is_verified = models.BooleanField("Verified", default=False)
     file = models.FileField("Medical certificate file", upload_to='medical_certificates/', storage=PrivateMediaStorage(),
                             validators=[FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png'])])
 

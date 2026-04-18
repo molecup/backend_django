@@ -186,6 +186,18 @@
       color: var(--missing-text);
     }
 
+    .badge-verified {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .badge-verified {
+        background: #0f4c2a;
+        color: #6ee7b7;
+      }
+    }
+
     @media (max-width: 1024px) {
       .results table,
       .results thead,
@@ -267,6 +279,7 @@
             <th>Shirt Number</th>
             <th>Position</th>
             <th>Certificate</th>
+            <th>Verified</th>
             <th>Expiry Date</th>
             <th>File</th>
             <th>Action</th>
@@ -302,6 +315,13 @@
                   <span class="badge badge-missing">Missing</span>
                 {% endif %}
               </td>
+              <td data-label="Verified">
+                {% if player.medical_certificate and player.medical_certificate.is_verified %}
+                  <span class="badge badge-verified">✓ Verified</span>
+                {% else %}
+                  <span class="text-muted">-</span>
+                {% endif %}
+              </td>
               <td data-label="Expiry Date">
                 {% if player.medical_certificate and player.medical_certificate.expires_at %}
                   {{ player.medical_certificate.expires_at|date:"Y-m-d" }}
@@ -327,6 +347,17 @@
                     {% if player.medical_certificate %}Replace Certificate{% else %}Upload Certificate{% endif %}
                   </button>
                 </form>
+
+                {% if player.medical_certificate and not player.medical_certificate.is_verified %}
+                <form method="post" style="margin: 0;">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="verify_certificate">
+                  <input type="hidden" name="player_id" value="{{ player.id }}">
+                  <button type="submit" class="button-upload" style="background: #28a745; margin-top: 4px;">
+                    Verify Certificate
+                  </button>
+                </form>
+                {% endif %}
 
                 {% if player.medical_certificate %}
                 <form method="post" onsubmit="return confirm('Delete this medical certificate?');" style="margin: 0;">
