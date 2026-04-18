@@ -363,7 +363,7 @@
                   <input type="hidden" name="action" value="upload_certificate">
                   <input type="hidden" name="player_id" value="{{ player.id }}">
                   <input type="file" name="certificate_file" accept=".pdf,.jpg,.jpeg,.png" required>
-                  <input type="date" name="expires_at" value="{% if player.medical_certificate and player.medical_certificate.expires_at %}{{ player.medical_certificate.expires_at|date:'Y-m-d' }}{% endif %}">
+                  <input type="date" name="expires_at" value="{% if player.medical_certificate and player.medical_certificate.expires_at %}{{ player.medical_certificate.expires_at|date:'Y-m-d' }}{% endif %}" required>
                   <button type="submit" class="button-upload">
                     {% if player.medical_certificate %}Replace Certificate{% else %}Upload Certificate{% endif %}
                   </button>

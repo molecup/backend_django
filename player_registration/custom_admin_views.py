@@ -108,6 +108,15 @@ def medical_certificate_player_list_players_view(request, player_list_id):
                     )
                 )
 
+            if not expires_at_input:
+                messages.error(request, "Please provide the certificate expiry date.")
+                return redirect(
+                    reverse(
+                        "medical-certificate-player-list-players",
+                        kwargs={"player_list_id": player_list.id},
+                    )
+                )
+
             expires_at = None
             if expires_at_input:
                 expires_at = parse_date(expires_at_input)
