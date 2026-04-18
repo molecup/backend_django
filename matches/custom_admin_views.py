@@ -61,7 +61,7 @@ def match_list_view(request):
 @staff_member_required
 def match_edit_view(request, match_id):
     match = get_object_or_404(Match, id=match_id)
-    participations = match.participations.select_related('team').all()
+    participations = list(match.participations.select_related('team').all())
 
     # Calculate elapsed minutes if live
     elapsed_minutes = 0
@@ -105,6 +105,19 @@ def match_edit_view(request, match_id):
                  match.save()
                  return redirect('custom_match_edit', match_id=match.id)
 
+        elif 'update_penalties' in request.POST:
+            for tp in participations:
+                penalties_value = request.POST.get(f'penalties_{tp.id}', '')
+                if penalties_value in (None, ''):
+                    penalties_value = 0
+                try:
+                    penalties_value = int(penalties_value)
+                except (TypeError, ValueError):
+                    penalties_value = 0
+                tp.penalties = max(0, penalties_value)
+                tp.save(update_fields=['penalties'])
+            return redirect('custom_match_edit', match_id=match.id)
+
     
     # Existing events
     events = MatchEvent.objects.filter(team_match__match=match).select_related('player', 'team_match__team').order_by('-minute', '-id')
@@ -123,6 +136,7 @@ def match_edit_view(request, match_id):
 
     context = {
         'match': match,
+        'participations': participations,
         'events': events,
         'team_forms': team_forms,
         'elapsed_minutes': elapsed_minutes,

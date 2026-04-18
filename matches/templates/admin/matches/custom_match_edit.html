@@ -7,6 +7,7 @@
   <style>
       :root {
           --primary-color: #447e9b;
+          --secondary-color: #eef3f6;
           --bg-color: #f4f6f9;
           --card-bg: #ffffff;
           --text-color: #333;
@@ -17,6 +18,7 @@
       @media (prefers-color-scheme: dark) {
         :root {
           --primary-color: #264b5d;
+                    --secondary-color: #27343d;
           --bg-color: #121212;
           --card-bg: #1e1e1e;
           --text-color: #f0f0f0;
@@ -110,6 +112,48 @@
           background-color: var(--bg-color);
           color: var(--text-color);
           box-sizing: border-box;
+      }
+
+      /* Penalties Frame */
+      .penalties-frame {
+          margin-bottom: 30px;
+          background: var(--card-bg);
+          padding: 20px;
+          border-radius: 8px;
+          border: 1px solid var(--border-color);
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+      .penalties-frame h2 {
+          margin: 0 0 12px 0;
+      }
+      .penalties-help {
+          color: var(--muted-text);
+          margin-bottom: 15px;
+      }
+      .penalties-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(220px, 1fr));
+          gap: 15px;
+      }
+      .penalty-item label {
+          display: block;
+          margin-bottom: 6px;
+          font-weight: 600;
+      }
+      .penalty-item input {
+          width: 100%;
+          height: 40px;
+          border: 1px solid var(--border-color);
+          border-radius: 4px;
+          padding: 8px 10px;
+          box-sizing: border-box;
+          background-color: var(--bg-color);
+          color: var(--text-color);
+      }
+      .penalties-actions {
+          margin-top: 15px;
+          display: flex;
+          justify-content: flex-end;
       }
 
       /* Event Entry Section */
@@ -224,6 +268,15 @@
           .status-bar {
               flex-direction: column;
           }
+          .penalties-grid {
+              grid-template-columns: 1fr;
+          }
+          .penalties-actions {
+              justify-content: stretch;
+          }
+          .penalties-actions .button {
+              width: 100%;
+          }
       }
   </style>
 {% endblock %}
@@ -245,7 +298,7 @@
             {% for part in parts %}
                 <div class="team-score">
                     <div class="team-name">{{ part.team.name }}</div>
-                    <div class="team-points">{{ part.score }}</div>
+                    <div class="team-points">{{ part.score }}({{ part.penalties }})</div>
                 </div>
                 {% if not forloop.last %}<div class="vs-divider">-</div>{% endif %}
             {% endfor %}
@@ -272,6 +325,33 @@
                 {% endfor %}
             </select>
             <input type="submit" value="Update" class="button">
+        </form>
+    </div>
+
+    <div class="penalties-frame">
+        <h2>Penalty Shootout</h2>
+        <div class="penalties-help">Set penalties only when the regular score is tied and the winner is decided on penalties.</div>
+        <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="update_penalties" value="1">
+            <div class="penalties-grid">
+                {% for participation in participations %}
+                <div class="penalty-item">
+                    <label for="penalties_{{ participation.id }}">{{ participation.team.name }}</label>
+                    <input
+                        id="penalties_{{ participation.id }}"
+                        name="penalties_{{ participation.id }}"
+                        type="number"
+                        min="0"
+                        max="99"
+                        value="{{ participation.penalties }}"
+                    >
+                </div>
+                {% endfor %}
+            </div>
+            <div class="penalties-actions">
+                <button type="submit" class="button">Save Penalties</button>
+            </div>
         </form>
     </div>
 
