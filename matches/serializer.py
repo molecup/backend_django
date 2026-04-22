@@ -69,15 +69,18 @@ class StadiumSerializer(serializers.ModelSerializer):
         model = Stadium
         fields = '__all__'
 
+class PlayerShortSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Player
+        fields = ['id', 'first_name', 'last_name', 'position', 'shirt_number']
+
 class MatchEventSerializer(serializers.ModelSerializer):
     team_match = serializers.PrimaryKeyRelatedField(
         read_only=False,
         queryset=TeamParticipationMatch.objects.all()
     )
-    player = serializers.PrimaryKeyRelatedField(
-        read_only=False,
-        queryset=Player.objects.all()
-    )
+    player = PlayerShortSerializer(read_only=True)
+
     class Meta:
         model = MatchEvent
         fields = '__all__'
