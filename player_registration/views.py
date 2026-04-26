@@ -181,11 +181,24 @@ def export_bulk_player_list_csv(request):
             # Create CSV in memory
             csv_buffer = StringIO()
             writer = csv.writer(csv_buffer)
-            writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position'])
+            writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position', 'Genitore First Name', 'Genitore Last Name', 'Genitore Date of Birth', 'Genitore Place of Birth', 'Genitore CF'])
             
             for player in players:
                 # Optimization: Check payment status in memory from prefetched data without triggering external API calls
                 is_paid = any(pt.verified_at is not None for pt in player.payment_transactions.all())
+                parent = player.parent if hasattr(player, 'parent') else None
+                if parent:
+                    parent_first_name = parent.first_name
+                    parent_last_name = parent.last_name
+                    parent_date_of_birth = parent.date_of_birth
+                    parent_place_of_birth = parent.place_of_birth
+                    parent_code_fiscal = parent.code_fiscal
+                else:
+                    parent_first_name = ''
+                    parent_last_name = ''
+                    parent_date_of_birth = ''
+                    parent_place_of_birth = ''
+                    parent_code_fiscal = ''
                 writer.writerow([
                     'Submitted' if player.registration_status == 'SUB' else 'Not Submitted',
                     'Received' if is_paid else 'Missing',
@@ -197,7 +210,12 @@ def export_bulk_player_list_csv(request):
                     player.place_of_birth or '',
                     player.shirt_size or '',
                     player.shirt_number or '',
-                    player.position or ''
+                    player.position or '',
+                    parent_first_name,
+                    parent_last_name,
+                    parent_date_of_birth.strftime('%Y-%m-%d') if parent_date_of_birth else '',
+                    parent_place_of_birth or '',
+                    parent_code_fiscal or ''
                 ])
             
             # Add CSV to zip with sanitized filename
