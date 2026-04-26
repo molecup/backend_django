@@ -181,7 +181,7 @@ def export_bulk_player_list_csv(request):
             # Create CSV in memory
             csv_buffer = StringIO()
             writer = csv.writer(csv_buffer)
-            writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position', 'Genitore First Name', 'Genitore Last Name', 'Genitore Date of Birth', 'Genitore Place of Birth', 'Genitore CF'])
+            writer.writerow(['Status', 'Payment', 'First Name', 'Last Name', 'Email', 'cf', 'Date of Birth', 'Place of birth', 'Shirt size', 'Shirt number', 'Position', 'Timestamp privacy', 'Genitore First Name', 'Genitore Last Name', 'Genitore Date of Birth', 'Genitore Place of Birth', 'Genitore CF'])
             
             for player in players:
                 # Optimization: Check payment status in memory from prefetched data without triggering external API calls
@@ -211,6 +211,7 @@ def export_bulk_player_list_csv(request):
                     player.shirt_size or '',
                     player.shirt_number or '',
                     player.position or '',
+                    player.privacy_accepted_at.strftime('%Y-%m-%d %H:%M:%S') if player.privacy_accepted_at else '',
                     parent_first_name,
                     parent_last_name,
                     parent_date_of_birth.strftime('%Y-%m-%d') if parent_date_of_birth else '',
